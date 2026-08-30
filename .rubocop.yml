@@ -1,0 +1,40 @@
+AllCops:
+  TargetRubyVersion: 3.1
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - vendor/**/*
+
+plugins:
+  - rubocop-minitest
+
+Layout/LineLength:
+  Max: 120
+
+Metrics:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+# The SDK mirrors the API's own parameter names, which run long by design.
+Naming/MethodParameterName:
+  MinNameLength: 2
+
+# `is_primary` mirrors the API field name.
+Naming/PredicatePrefix:
+  Enabled: false
+
+# A garbled timestamp becomes nil rather than taking down the caller.
+Style/RescueModifier:
+  Enabled: false
+
+Style/FetchEnvVar:
+  Enabled: false
+
+Minitest/MultipleAssertions:
+  Enabled: false
+
+Lint/StructNewOverride:
+  Exclude:
+    - test/test_helper.rb

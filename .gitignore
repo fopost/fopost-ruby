@@ -1,0 +1,11 @@
+/.bundle/
+/vendor/bundle/
+/pkg/
+/doc/
+/coverage/
+/tmp/
+*.gem
+Gemfile.lock
+.ruby-version
+.rubocop_cache/
+.DS_Store

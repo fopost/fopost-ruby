@@ -81,10 +81,11 @@ added.
 
 ## API Contract
 
-- **Base URL:** `Fopost::HTTP::Client::DEFAULT_BASE_URL` = `https://api.fopost.com/api/v1`
-  (re-exported as `Fopost::Client::DEFAULT_BASE_URL` and `Fopost::DEFAULT_BASE_URL`). Only a
-  trailing slash is stripped — pass the full path when overriding. There is **no
-  `FOPOST_BASE_URL` env read**; use the `base_url:` keyword.
+- **Base URL:** `Fopost::HTTP::Client::DEFAULT_BASE_URL` = `https://api.fopost.com/v1`
+  (re-exported as `Fopost::Client::DEFAULT_BASE_URL` and `Fopost::DEFAULT_BASE_URL`). That is
+  the path the API serves and the docs publish; `/api/v1` is **not** served and returns 404 —
+  never reintroduce it. Only a trailing slash is stripped — pass the full path when
+  overriding. There is **no `FOPOST_BASE_URL` env read**; use the `base_url:` keyword.
 - **Auth:** header `X-API-Key: <key>`, never Bearer. The key falls back to `ENV['FOPOST_API_KEY']`;
   a missing key raises `Fopost::ConfigurationError` before any request goes out.
 - **Headers on every request:** `Accept: application/json`, `Content-Type: application/json`,

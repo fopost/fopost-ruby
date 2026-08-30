@@ -183,7 +183,7 @@ end
 ```ruby
 Fopost.new(
   api_key: 'fp_...',                            # or FOPOST_API_KEY
-  base_url: 'https://api.fopost.com/api/v1',    # override for a dev server
+  base_url: 'https://api.fopost.com/v1',    # override for a dev server
   timeout: 30.0,                                # seconds
   max_retries: 3,                               # total attempts on a 429
   transport: MyTransport.new                    # bring your own HTTP stack

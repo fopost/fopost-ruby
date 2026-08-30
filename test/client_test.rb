@@ -33,8 +33,24 @@ class ClientTest < Minitest::Test
   end
 
   def test_trailing_slash_is_trimmed_from_the_base_url
-    assert_equal 'https://example.test/api/v1',
-                 Fopost::Client.new(api_key: 'k', base_url: 'https://example.test/api/v1/').base_url
+    assert_equal 'https://example.test/v1',
+                 Fopost::Client.new(api_key: 'k', base_url: 'https://example.test/v1/').base_url
+  end
+
+  def test_default_base_url_is_the_documented_v1_path
+    assert_equal 'https://api.fopost.com/v1', Fopost::HTTP::Client::DEFAULT_BASE_URL
+    refute_includes Fopost::HTTP::Client::DEFAULT_BASE_URL, '/api/v1'
+    assert_equal 'https://api.fopost.com/v1', Fopost::Client.new(api_key: 'k').base_url
+  end
+
+  def test_requests_go_to_v1_and_never_to_the_404_api_v1_path
+    transport.stub(:get, '/workspaces', json: { 'data' => [] })
+    Fopost::Client.new(api_key: API_KEY, transport: transport).workspaces.list
+
+    url = transport.last.uri.to_s
+
+    assert_equal 'https://api.fopost.com/v1/workspaces', url
+    refute_includes url, '/api/v1/'
   end
 
   def test_request_reaches_an_unwrapped_endpoint

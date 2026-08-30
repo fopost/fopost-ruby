@@ -6,8 +6,8 @@ require 'json'
 require 'minitest/autorun'
 require 'fopost'
 
-BASE_URL = 'https://api.test.fopost.com/api/v1'
-BASE_PATH = '/api/v1'
+BASE_URL = 'https://api.test.fopost.com/v1'
+BASE_PATH = '/v1'
 API_KEY = 'fp_test_key'
 
 # A transport that answers from a script instead of the network, and records
@@ -62,7 +62,7 @@ class StubTransport
   private
 
   def key(method, path)
-    [method.to_s.upcase, path.start_with?('/api/') ? path : "#{BASE_PATH}#{path}"]
+    [method.to_s.upcase, path.start_with?("#{BASE_PATH}/") ? path : "#{BASE_PATH}#{path}"]
   end
 end
 

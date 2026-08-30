@@ -13,7 +13,7 @@ module Fopost
     # Internal transport wrapper: auth headers, JSON coding, envelope unwrap,
     # and the 429 retry. One per {Fopost::Client}.
     class Client
-      DEFAULT_BASE_URL = 'https://api.fopost.com/api/v1'
+      DEFAULT_BASE_URL = 'https://api.fopost.com/v1'
       DEFAULT_TIMEOUT = 30.0
       DEFAULT_MAX_RETRIES = 3
       MAX_RETRY_WAIT = 60.0

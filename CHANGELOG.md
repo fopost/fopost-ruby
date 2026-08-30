@@ -9,6 +9,7 @@ All notable changes to this gem are documented here. The format follows
 Initial release.
 
 - `Fopost::Client` with `posts`, `accounts`, `workspaces`, `labels`, and `ai` resources.
+- Defaults to the documented `https://api.fopost.com/v1` base URL.
 - Automatic retry on `429`, honouring `Retry-After`.
 - Typed error classes per status, all rescuable as `Fopost::Error`.
 - Response models that accept either wire casing and keep unknown fields on `#raw`.

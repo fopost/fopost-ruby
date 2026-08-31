@@ -61,7 +61,7 @@ class AiTest < Minitest::Test
     transport.stub(:post, '/ai/rewrite', status: 402, json: {
                      'error' => 'insufficient_credits',
                      'message' => 'You have run out of AI credits.',
-                     'upgrade_url' => 'https://app.fopost.com/billing'
+                     'upgrade_url' => 'https://fopost.com/dashboard/billing'
                    })
 
     error = assert_raises(Fopost::PaymentRequiredError) do
@@ -69,6 +69,6 @@ class AiTest < Minitest::Test
     end
 
     assert_equal 'insufficient_credits', error.code
-    assert_equal 'https://app.fopost.com/billing', error.upgrade_url
+    assert_equal 'https://fopost.com/dashboard/billing', error.upgrade_url
   end
 end

@@ -25,7 +25,7 @@ gem install fopost
 
 ## Get an API key
 
-Create a key at [app.fopost.com/api-keys](https://app.fopost.com/api-keys). The full API reference lives at [fopost.com/docs](https://fopost.com/docs).
+Create a key at [fopost.com/dashboard/api-keys](https://fopost.com/dashboard/api-keys). The full API reference lives at [fopost.com/docs](https://fopost.com/docs).
 
 ## Quick start
 

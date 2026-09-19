@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'cgi'
+
 module Fopost
   module Resources
     # `client.accounts` — the social accounts connected to a workspace.
@@ -59,6 +61,31 @@ module Fopost
 
       def delete_telegram_bot_commands(account_id)
         TelegramBotCommands.new(unwrap(http.delete("/accounts/#{account_id}/telegram/commands")))
+      end
+
+      # Subreddits the account is in, busiest first, plus its own profile page.
+      def list_reddit_subreddits(account_id)
+        parse_list(RedditSubreddit, unwrap(http.get("/accounts/#{account_id}/reddit/subreddits")))
+      end
+
+      # The rules a subreddit publishes, in its own order.
+      def list_reddit_subreddit_rules(account_id, subreddit)
+        path = "/accounts/#{account_id}/reddit/subreddits/#{CGI.escape(subreddit)}/rules"
+        RedditSubredditRules.new(unwrap(http.get(path)))
+      end
+
+      # Post flairs one subreddit offers; a flair id is valid only there.
+      def list_reddit_flairs(account_id, subreddit)
+        RedditFlairs.new(
+          unwrap(http.get("/accounts/#{account_id}/reddit/flairs", { 'subreddit' => subreddit }))
+        )
+      end
+
+      # Where posts go when a post names none; nil falls back to the profile page.
+      def set_reddit_default_subreddit(account_id, subreddit)
+        RedditDefaultSubreddit.new(
+          unwrap(http.put("/accounts/#{account_id}/reddit/default-subreddit", { 'subreddit' => subreddit }))
+        )
       end
 
       # Channels the Slack app can post to in the connected workspace.

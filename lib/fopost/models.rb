@@ -44,6 +44,8 @@ module Fopost
     attribute :health_status
     attribute :last_health_check, :time
     attribute :platform_name
+    # True when the account was connected before a permission it now needs was asked for.
+    attribute :reconnect_required
   end
 
   # The result of renaming an account; `name` is the override when set, else the platform name.
@@ -111,6 +113,62 @@ module Fopost
     attribute :username
     attribute :icon_url
     attribute :icon_emoji
+  end
+
+  # A subreddit the account is in, or its own profile page. `can_post` is false
+  # where it may read but not submit.
+  class RedditSubreddit < Model
+    attribute :name
+    attribute :title
+    attribute :subscribers
+    attribute :over18
+    attribute :can_post
+    attribute :flair_enabled
+    attribute :icon_url
+    attribute :is_default
+  end
+
+  # One rule a subreddit publishes; `applies_to` is 'link', 'comment' or 'all'.
+  class RedditSubredditRule < Model
+    attribute :name
+    attribute :description
+    attribute :applies_to
+  end
+
+  # The rules a subreddit publishes, in its own order.
+  class RedditSubredditRules < Model
+    attribute :subreddit
+    attribute :rules, [RedditSubredditRule]
+  end
+
+  # A post flair, valid only in the subreddit it came from.
+  class RedditFlair < Model
+    attribute :id
+    attribute :text
+    # Whether the label may be replaced with your own text.
+    attribute :editable
+  end
+
+  # Post flairs one subreddit offers.
+  class RedditFlairs < Model
+    attribute :subreddit
+    attribute :flairs, [RedditFlair]
+  end
+
+  # Where posts go when a post names none; nil means the account's own profile page.
+  class RedditDefaultSubreddit < Model
+    attribute :subreddit
+  end
+
+  # `ok` is true when the subreddit exists and takes a post from this account.
+  class SubredditCheck < Model
+    attribute :subreddit
+    attribute :exists
+    attribute :can_post
+    # The API field is over_18.
+    attribute :over_18 # rubocop:disable Naming/VariableNumber
+    attribute :flair_enabled
+    attribute :ok
   end
 
   # A named set of connected accounts in one workspace.
@@ -400,12 +458,15 @@ module Fopost
     attribute :can_reply
     attribute :hidden
     attribute :liked
+    # How the account voted where the network ranks by votes: 'up', 'down' or nil.
+    attribute :vote
     attribute :pinned
     attribute :reaction
     attribute :edited_at, :time
     attribute :can_hide
     attribute :can_delete
     attribute :can_like
+    attribute :can_vote
     attribute :can_pin
     attribute :can_edit
     attribute :can_react

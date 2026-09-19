@@ -148,6 +148,14 @@ module Fopost
         InboxItem.new(unwrap(http.post("/inbox/#{item_id}/unlike")))
       end
 
+      # Vote up or down where the network ranks by votes (Reddit), where `can_vote`
+      # is true. `direction` is 'up', 'down', or 'none' to take an earlier vote
+      # back. An upvote is the same call a like makes, so `liked` moves with it.
+      # Needs `publish`.
+      def vote(item_id, direction)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/vote", { 'direction' => direction })))
+      end
+
       # Pin our own comment. Needs `publish`.
       def pin(item_id)
         InboxItem.new(unwrap(http.post("/inbox/#{item_id}/pin")))

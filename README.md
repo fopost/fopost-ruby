@@ -146,6 +146,15 @@ client.accounts.get_slack_identity(account_id)
 client.accounts.update_slack_identity(account_id, username: 'Launch Bot', icon_emoji: ':rocket:')   # nil clears
 ```
 
+On Reddit, where a post can go and what that subreddit expects of it:
+
+```ruby
+client.accounts.list_reddit_subreddits(account_id)
+client.accounts.list_reddit_subreddit_rules(account_id, 'webdev')
+client.accounts.list_reddit_flairs(account_id, 'webdev')
+client.accounts.set_reddit_default_subreddit(account_id, 'webdev')   # nil falls back to the profile page
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.
@@ -210,6 +219,8 @@ lengths.platforms.each { |p| puts "#{p.platform}: #{p.length}/#{p.limit || 'no l
 
 file = client.validate.media(url: 'https://example.com/a.png')
 puts file.ok ? file.type : file.issues.join(', ')
+
+sub = client.validate.subreddit(account_id: account_id, name: 'webdev')
 ```
 
 ## Inbox
@@ -238,6 +249,7 @@ Acting on the platform also needs the `publish` scope. Each item's `can_*` flags
 
 ```ruby
 client.inbox.like(item.id)                               # unlike, pin, unpin work the same way
+client.inbox.vote(item.id, 'down')                       # 'up', 'down', or 'none' to take it back
 client.inbox.react(item.id, reaction: '❤️')               # reaction: nil removes ours
 client.inbox.edit_comment(item.id, text: 'Fixed a typo')
 client.inbox.reply(item.id, media_ids: [media.id], quick_replies: %w[Yes No])

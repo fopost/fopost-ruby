@@ -30,6 +30,36 @@ module Fopost
       def move(account_id, workspace_id:)
         AccountMove.new(unwrap(http.post("/accounts/#{account_id}/move", { 'workspace_id' => workspace_id })))
       end
+
+      # Mint a 15-minute code; sending `/connect <code>` to the bot connects that chat.
+      # workspace_id may be omitted for a key bound to one workspace.
+      def create_telegram_connect_code(workspace_id: nil)
+        TelegramConnectCode.new(unwrap(http.post('/accounts/telegram/connect-code',
+                                                 compact_nil({ 'workspaceId' => workspace_id }))))
+      end
+
+      def get_telegram_connect_status(code)
+        TelegramConnectStatus.new(unwrap(http.get('/accounts/telegram/connect-code/status', { 'code' => code })))
+      end
+
+      def get_telegram_bot_commands(account_id)
+        TelegramBotCommands.new(unwrap(http.get("/accounts/#{account_id}/telegram/commands")))
+      end
+
+      # Replace the chat's command menu; each entry is a hash with `command` and `description`.
+      def set_telegram_bot_commands(account_id, commands)
+        body = {
+          'commands' => commands.map do |entry|
+            { 'command' => entry[:command] || entry['command'],
+              'description' => entry[:description] || entry['description'] }
+          end
+        }
+        TelegramBotCommands.new(unwrap(http.put("/accounts/#{account_id}/telegram/commands", body)))
+      end
+
+      def delete_telegram_bot_commands(account_id)
+        TelegramBotCommands.new(unwrap(http.delete("/accounts/#{account_id}/telegram/commands")))
+      end
     end
   end
 end

@@ -114,6 +114,15 @@ All notable changes to this gem are documented here. The format follows
   (`search_instagram_audio`, `get_instagram_publishing_limit`, `list_instagram_stories`,
   `get_instagram_story_insights`) and LinkedIn mentions (`search_linkedin_mentions`), with a
   model each.
+- `accounts.list_reddit_subreddits`, `list_reddit_subreddit_rules`, `list_reddit_flairs` and
+  `set_reddit_default_subreddit` (`accounts` scope): a Reddit account's destinations, a
+  subreddit's rules and post flairs, and where posts go when one names no subreddit. With the
+  `RedditSubreddit`, `RedditSubredditRule(s)`, `RedditFlair(s)` and `RedditDefaultSubreddit`
+  models. An account connected before those permissions were asked for answers 409
+  `reconnect_required`.
+- `validate.subreddit` (`posts` scope), with the `SubredditCheck` model.
+- `inbox.vote` (`inbox` and `publish`): up, down, or `'none'` to take an earlier vote back.
+- `SocialAccount#reconnect_required`, and the inbox item's `vote` and `can_vote`.
 
 ### Changed
 

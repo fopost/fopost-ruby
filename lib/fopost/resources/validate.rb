@@ -25,6 +25,13 @@ module Fopost
       def media(url:)
         ValidateMediaResult.new(unwrap(http.post('/validate/media', { 'url' => url })))
       end
+
+      # Whether a subreddit exists and takes a post from this Reddit account. The
+      # check runs with the account's own token, so `account_id` is required.
+      def subreddit(account_id:, name:)
+        params = { 'account_id' => account_id, 'name' => name }
+        SubredditCheck.new(unwrap(http.get('/validate/subreddit', params)))
+      end
     end
   end
 end

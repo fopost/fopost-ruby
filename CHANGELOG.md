@@ -23,7 +23,7 @@ All notable changes to this gem are documented here. The format follows
   `accounts.list` takes `group_id`, and `SocialAccount#platform_name` is read.
 - `posts.create` takes `account_group_id`.
 - `media.presign`, `complete` and `upload_direct` upload a file straight to storage instead of
-  through the API (`media` scope).
+  through the API (`posts` scope).
 
 ## [0.2.0] - 2026-09-19
 

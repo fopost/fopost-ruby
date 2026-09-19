@@ -80,6 +80,15 @@ module Fopost
         request(:delete, path, json: json)
       end
 
+      # PUT raw bytes to a presigned URL. Sends only the headers given, never
+      # the API key, and returns nothing: the body is the storage backend's.
+      def put_raw(url, body, headers)
+        response = @transport.call(method: 'PUT', url: URI.parse(url.to_s), headers: headers, body: body)
+        return if response.success?
+
+        raise ErrorFactory.build(response.status, decode_body(response))
+      end
+
       # Peel the `{"data": ...}` envelope the API wraps most responses in. Some
       # endpoints (POST /posts, GET /posts/:id) return the resource bare, so the
       # envelope comes off only when it is actually there.

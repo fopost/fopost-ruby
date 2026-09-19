@@ -243,6 +243,26 @@ client.ads.lead_forms(workspace_id: workspace.id)
 client.ads.leads('form_1', connection_id: source.connection_id, page_id: '42')
 ```
 
+## Media
+
+Direct uploads to the media library, in three steps: presign a slot, PUT the bytes to the returned URL with the returned headers (no API key), then complete. `upload_direct` does all three and returns the media item; a rejected PUT raises before `complete` is called.
+
+```ruby
+item = client.media.upload_direct(
+  workspace_id: workspace.id,
+  filename: 'logo.png',
+  mime_type: 'image/png',
+  data: File.binread('logo.png')
+)
+item.id
+item.preview_url
+
+# Or step by step
+upload = client.media.presign(workspace_id: workspace.id, filename: 'logo.png', mime_type: 'image/png', size: 4096)
+upload.upload_url   # PUT the bytes here with upload.headers
+client.media.complete(upload.upload_id)
+```
+
 ## Errors
 
 Every non-2xx response raises. All of them are rescuable as `Fopost::Error`.

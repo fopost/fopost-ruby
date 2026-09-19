@@ -4,12 +4,23 @@ require 'fopost/model'
 
 module Fopost
   class MediaItem < Model
+    attribute :id
     attribute :type
     attribute :name
     attribute :url
     attribute :size
     attribute :alt
     attribute :thumbnail
+    attribute :preview_url
+  end
+
+  # Where and how to PUT the bytes of a direct upload.
+  class PresignedUpload < Model
+    attribute :upload_id
+    attribute :upload_url
+    attribute :method
+    attribute :headers, :hash
+    attribute :expires_at, :time
   end
 
   # One block of a post. A thread is several blocks in order.

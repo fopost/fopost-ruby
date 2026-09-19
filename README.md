@@ -226,7 +226,7 @@ client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
 
 ## Ads
 
-Meta ads, audiences and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status` and `delete` spend money and also need `publish`. A boost or ad starts paused unless you pass `paused: false`.
+Meta ads, campaigns, creatives, audiences, insights and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
 
 ```ruby
 url = client.ads.authorize_meta(workspace_id: workspace.id)   # finish the Meta login in a browser
@@ -254,6 +254,44 @@ client.ads.search_targeting(connection_id: source.connection_id, type: 'interest
 client.ads.lead_forms(workspace_id: workspace.id)
 client.ads.leads('form_1', connection_id: source.connection_id, page_id: '42')
 ```
+
+The campaign tree is read live from Meta by Meta id, so each call names the connection:
+
+```ruby
+conn = source.connection_id
+tree = client.ads.account_tree('act_123', connection_id: conn, workspace_id: workspace.id)
+campaign = client.ads.create_campaign(workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123',
+                                      name: 'Spring', goal: 'traffic')
+ad_set = client.ads.create_ad_set(workspace_id: workspace.id, connection_id: conn, campaign_id: campaign.id,
+                                  page_id: '42', name: 'US adults', goal: 'traffic',
+                                  budget: { minor: 5000, type: 'daily' },
+                                  targeting: { countries: ['US'], ageMin: 18, ageMax: 65, gender: 'all' })
+creative = client.ads.create_creative(workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123',
+                                      page_id: '42', name: 'Hero', format: 'image', text: 'New in store',
+                                      media_url: 'https://yourbrand.com/hero.jpg', url_tags: 'utm_source=meta')
+client.ads.create_network_ad(workspace_id: workspace.id, connection_id: conn, ad_set_id: ad_set.id,
+                             creative_id: creative.id, name: 'Hero ad')
+client.ads.bulk_set_status(workspace_id: workspace.id, connection_id: conn, status: 'active',
+                           objects: [{ id: campaign.id, level: 'campaign' }])
+
+client.ads.insights(connection_id: conn, object_id: campaign.id, since: '2026-09-01', until: '2026-09-07',
+                    breakdown: 'age', daily: true)
+client.ads.ad_insights(ad.id, workspace_id: workspace.id, since: '2026-09-01', until: '2026-09-07')
+
+client.ads.subscribe_lead_page(workspace_id: workspace.id, connection_id: conn, page_id: '42')
+page = client.ads.leads_feed(workspace_id: workspace.id, limit: 50)
+page = client.ads.leads_feed(workspace_id: workspace.id, cursor: page.next_cursor) if page.next_cursor
+```
+
+| Group | Methods |
+| --- | --- |
+| Campaigns | `account_tree`, `create_campaign`, `get_campaign`, `update_campaign`, `delete_campaign`, `duplicate_campaign` |
+| Ad sets | `create_ad_set`, `get_ad_set`, `update_ad_set`, `delete_ad_set`, `duplicate_ad_set` |
+| Network ads | `create_network_ad`, `get_network_ad`, `update_network_ad`, `delete_network_ad`, `duplicate_network_ad`, `bulk_set_status` |
+| Creatives | `creatives`, `create_creative`, `get_creative`, `delete_creative` |
+| Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `estimate_reach` |
+| Insights | `insights`, `ad_insights` |
+| Leads | `get_lead_form`, `archive_lead_form`, `leads_feed`, `lead_pages`, `subscribe_lead_page`, `unsubscribe_lead_page` |
 
 ## Media
 

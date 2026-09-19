@@ -124,6 +124,18 @@ client.accounts.update(account_id, display_name: 'Brand HQ')   # nil restores th
 client.accounts.move(account_id, workspace_id: other_workspace.id)
 ```
 
+Connect a Telegram chat with a one-time code, and set the command menu the bot shows there:
+
+```ruby
+code = client.accounts.create_telegram_connect_code(workspace_id: workspace.id)
+puts code.command                                   # send this to the bot in the chat
+client.accounts.get_telegram_connect_status(code.code).status   # pending, connected, failed or expired
+
+client.accounts.set_telegram_bot_commands(account_id, [{ command: 'start', description: 'Start here' }])
+client.accounts.get_telegram_bot_commands(account_id)
+client.accounts.delete_telegram_bot_commands(account_id)
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.

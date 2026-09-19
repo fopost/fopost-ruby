@@ -6,6 +6,11 @@ All notable changes to this gem are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
+  `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
+
 ## [0.3.0] - 2026-09-19
 
 ### Added

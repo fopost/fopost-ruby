@@ -123,6 +123,11 @@ All notable changes to this gem are documented here. The format follows
 - `validate.subreddit` (`posts` scope), with the `SubredditCheck` model.
 - `inbox.vote` (`inbox` and `publish`): up, down, or `'none'` to take an earlier vote back.
 - `SocialAccount#reconnect_required`, and the inbox item's `vote` and `can_vote`.
+- `client.blogs` reaches content a connected site already owns, by the platform's own ids:
+  `list_blogs`, `list_articles`, `get_article`, `create_article`, `update_article`,
+  `delete_article`, plus `list_products` and `update_product` for a Shopify store, with the
+  `RemoteBlog`, `RemoteArticle` and `RemoteProduct` models. `update_article` changes the live
+  article in place and never creates a second post. Reads need `posts`; the writes need `publish`.
 
 ### Changed
 

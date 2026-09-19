@@ -19,6 +19,7 @@ require 'fopost/resources/knowledge'
 require 'fopost/resources/labels'
 require 'fopost/resources/media'
 require 'fopost/resources/posts'
+require 'fopost/resources/blogs'
 require 'fopost/resources/validate'
 require 'fopost/resources/whatsapp'
 require 'fopost/resources/workspaces'
@@ -37,7 +38,7 @@ module Fopost
 
     attr_reader :posts, :accounts, :account_groups, :workspaces, :labels, :ai, :inbox, :contacts, :broadcasts,
                 :sequences, :knowledge, :ads, :validate, :media, :activity, :google_business, :analytics,
-                :blog, :whatsapp
+                :blog, :blogs, :whatsapp
 
     def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, timeout: HTTP::Client::DEFAULT_TIMEOUT,
                    max_retries: HTTP::Client::DEFAULT_MAX_RETRIES, transport: nil, sleeper: nil)
@@ -75,6 +76,7 @@ module Fopost
       @activity = Resources::Activity.new(@http)
       @google_business = Resources::GoogleBusiness.new(@http)
       @blog = Resources::Blog.new(@http)
+      @blogs = Resources::Blogs.new(@http)
     end
 
     def base_url

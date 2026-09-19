@@ -11,7 +11,7 @@ error class per status.
 - **Ruby >= 3.1** (`required_ruby_version` in `fopost.gemspec`).
 - **Zero runtime dependencies on purpose** — the gem talks over `net/http` from the standard
   library so it drops into any app without a version conflict. Do not add one.
-- Version `0.1.0` in `lib/fopost/version.rb`, which the gemspec reads.
+- Version `0.2.0` in `lib/fopost/version.rb`, which the gemspec reads.
 
 ## Downstream Packages
 
@@ -54,7 +54,7 @@ lib/fopost/
     response.rb            status + downcased headers + raw body, pre-decode
   resources/
     base.rb                unwrap/parse_list/compact_unset/iso8601 helpers
-    posts.rb accounts.rb workspaces.rb labels.rb ai.rb
+    posts.rb accounts.rb workspaces.rb labels.rb ai.rb inbox.rb ads.rb
 ```
 
 **Request flow.** `client.posts.create(...)` → `Resources::Posts` normalises content and
@@ -73,11 +73,14 @@ calls `unwrap` and hands the hash to a model.
   named fields (`Resources::Base#compact_unset`).
 - `Resources::Posts#each` / `#each_page` walk the list endpoint a page at a time.
 
-**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`. Coverage is
-uneven and that is deliberate — `labels` is `#list` only, `workspaces` is `#list`/`#get`,
-`accounts` is `#list`/`#get`/`#health`. There is no `communities`, `webhooks`, `analytics`,
-`automations`, or `media` resource; reach those through `Fopost::Client#request` until one is
-added.
+**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`.
+Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
+`#list`/`#get`, `accounts` is `#list`/`#get`/`#health`. `inbox` (scope `inbox`) covers the
+list, thread, conversation, read, refresh, reply, hide, delete and approval endpoints but not
+`/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
+audiences, targeting search and lead forms; `boost`, `create`, `set_status` and `delete` also
+need `publish`. There is no `communities`, `webhooks`, `analytics`, `automations`, or `media`
+resource; reach those through `Fopost::Client#request` until one is added.
 
 ## API Contract
 
@@ -98,7 +101,11 @@ added.
   capped at `MAX_RETRY_WAIT` = 60.0s.
 - **Success envelope:** `Fopost::HTTP::Client.unwrap` peels `{"data": ...}` only when the key is
   present, because some endpoints answer bare. Paginated lists carry a sibling `meta`
-  (`current_page`, `per_page`, `total`, `last_page`, `from`, `to`) parsed by `Fopost::PageMeta`.
+  (`current_page`, `per_page`, `total`, `last_page`, `from`, `to`) parsed by `Fopost::PageMeta`;
+  the inbox lists answer `{ page, perPage, total }`, parsed by `Fopost::InboxPageMeta`.
+- **Wire casing differs per family.** Inbox and ads responses are camelCase. Inbox query params
+  and the `/inbox/read` and `/inbox/refresh` bodies are snake_case; `PATCH /inbox/{id}` and every
+  ads body are camelCase. The resources translate; callers always pass snake_case keywords.
 - **Error envelope:** `{"error": "<code>", "message": "<text>"}` maps onto `Error#code` and
   `Error#message`; the parsed body stays on `#body`. `PaymentRequiredError#upgrade_url` and
   `ValidationError#errors` read off that body. `Error#to_s` renders `[<status> (<code>)] <message>`.
@@ -134,7 +141,7 @@ and `bundle exec rubocop` once on 3.4.
   API field), `Style/RescueModifier` and `Style/FetchEnvVar` allowed.
 - `# frozen_string_literal: true` on every file.
 - Keyword arguments mirror the API's own parameter names, which is why
-  `Naming/MethodParameterName` is loosened rather than the names shortened.
+  `Naming/MethodParameterName` is loosened (and `q` allowed) rather than the names shortened.
 - Comments stay short and explain a "why". YARD-style doc comments on public API methods are
   expected; no narrated comments on obvious code.
 
@@ -149,6 +156,7 @@ and `bundle exec rubocop` once on 3.4.
   lambda that appends to `#slept`, letting `test/retry_test.rb` assert exact waits with no clock.
 - Shared fixtures (`POST_FIXTURE`, `ACCOUNT_FIXTURE`, `WORKSPACE_FIXTURE`, `LABEL_FIXTURE`) are
   in `test_helper.rb` and deliberately mix snake_case and camelCase to pin the dual-casing reader.
+  `test/inbox_test.rb` and `test/ads_test.rb` keep their camelCase fixtures local.
 - **Tests never hit the live API.** No network call in the suite, ever, in CI or locally. If a
   change cannot be tested through `StubTransport`, the change is in the wrong layer.
 

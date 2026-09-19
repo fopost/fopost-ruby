@@ -212,4 +212,137 @@ class AdsTest < Minitest::Test
     assert_equal 'lead_1', page.leads[0].id
     assert_equal 'abc', page.next_cursor
   end
+
+  def test_account_tree_nests_campaigns_ad_sets_and_ads
+    ad_set = { 'id' => 's_1', 'name' => 'US', 'ads' => [{ 'id' => 'a_1', 'creativeId' => 'cr_1' }] }
+    campaign = { 'id' => 'c_1', 'name' => 'Spring', 'status' => 'ACTIVE', 'adSets' => [ad_set] }
+    transport.stub(:get, '/ads/accounts/act_123/tree', json: {
+                     'data' => { 'adAccountId' => 'act_123', 'currency' => 'USD', 'workspaceId' => 'ws_1',
+                                 'campaigns' => [campaign] }
+                   })
+
+    tree = client.ads.account_tree('act_123', connection_id: 'conn_1', workspace_id: 'ws_1')
+
+    assert_equal({ 'workspace_id' => 'ws_1', 'connection_id' => 'conn_1' }, transport.last.query)
+    assert_equal 'USD', tree.currency
+    assert_equal 'Spring', tree.campaigns[0].name
+    assert_equal 'cr_1', tree.campaigns[0].ad_sets[0].ads[0].creative_id
+  end
+
+  def test_campaign_update_duplicate_and_delete_carry_the_meta_query
+    transport
+      .stub(:patch, '/ads/campaigns/c_1', json: { 'data' => { 'id' => 'c_1', 'status' => 'PAUSED' } })
+      .stub(:post, '/ads/campaigns/c_1/duplicate', status: 201, json: { 'data' => { 'id' => 'c_2' } })
+      .stub(:delete, '/ads/campaigns/c_1', json: { 'message' => 'Deleted' })
+
+    campaign = client.ads.update_campaign('c_1', workspace_id: 'ws_1', connection_id: 'conn_1', status: 'paused')
+
+    assert_equal 'PAUSED', campaign.status
+    assert_equal({ 'status' => 'paused' }, transport.last.json)
+    assert_equal({ 'workspace_id' => 'ws_1', 'connection_id' => 'conn_1' }, transport.last.query)
+
+    copy = client.ads.duplicate_campaign('c_1', workspace_id: 'ws_1', connection_id: 'conn_1', paused: true)
+
+    assert_equal 'c_2', copy
+    assert_equal({ 'paused' => true }, transport.last.json)
+
+    assert_nil client.ads.delete_campaign('c_1', workspace_id: 'ws_1', connection_id: 'conn_1')
+    assert_equal 'DELETE', transport.last.method
+  end
+
+  def test_bulk_set_status_sends_the_objects
+    transport.stub(:post, '/ads/status', json: { 'data' => [{ 'id' => 'c_1', 'level' => 'campaign', 'ok' => true }] })
+
+    results = client.ads.bulk_set_status(workspace_id: 'ws_1', connection_id: 'conn_1', status: 'paused',
+                                         objects: [{ id: 'c_1', level: 'campaign' }])
+
+    assert_equal [{ 'id' => 'c_1', 'level' => 'campaign' }], transport.last.json['objects']
+    assert results[0].ok
+  end
+
+  def test_leads_feed_passes_the_cursor
+    transport.stub(:get, '/ads/leads', json: {
+                     'data' => { 'leads' => [{ 'id' => 'l_1', 'leadId' => 'meta_1', 'formId' => 'form_1',
+                                               'submittedAt' => '2026-09-18T10:00:00.000Z' }],
+                                 'nextCursor' => 'next_1' }
+                   })
+
+    page = client.ads.leads_feed(workspace_id: 'ws_1', form_id: 'form_1', cursor: 'cur_0', limit: 50)
+
+    assert_equal({ 'workspace_id' => 'ws_1', 'form_id' => 'form_1', 'cursor' => 'cur_0', 'limit' => '50' },
+                 transport.last.query)
+    assert_equal 'meta_1', page.leads[0].lead_id
+    assert_equal Time.utc(2026, 9, 18, 10), page.leads[0].submitted_at
+    assert_equal 'next_1', page.next_cursor
+  end
+
+  def test_insights_query_params
+    report = {
+      'data' => { 'objectId' => 'c_1', 'currency' => 'USD', 'since' => '2026-09-01', 'until' => '2026-09-07',
+                  'breakdownBy' => 'age', 'totals' => { 'impressions' => 10, 'spendMinor' => 99, 'ctr' => 1.5 },
+                  'breakdown' => [{ 'key' => '18-24', 'metrics' => { 'clicks' => 2 } }],
+                  'timeline' => [{ 'date' => '2026-09-01', 'metrics' => { 'reach' => 7 } }] }
+    }
+    transport.stub(:get, '/ads/insights', json: report).stub(:get, '/ads/ad_1/insights', json: report)
+
+    result = client.ads.insights(connection_id: 'conn_1', object_id: 'c_1', since: '2026-09-01',
+                                 until: '2026-09-07', breakdown: 'age', daily: true)
+
+    assert_equal(
+      { 'connection_id' => 'conn_1', 'object_id' => 'c_1', 'since' => '2026-09-01', 'until' => '2026-09-07',
+        'breakdown' => 'age', 'daily' => 'true' },
+      transport.last.query
+    )
+    assert_equal 'c_1', result.meta_object_id
+    assert_equal '2026-09-07', result.until
+    assert_equal 99, result.totals.spend_minor
+    assert_equal 2, result.breakdown[0].metrics.clicks
+    assert_equal 7, result.timeline[0].metrics.reach
+
+    client.ads.ad_insights('ad_1', workspace_id: 'ws_1', since: '2026-09-01', until: '2026-09-07')
+
+    assert_equal({ 'workspace_id' => 'ws_1', 'since' => '2026-09-01', 'until' => '2026-09-07' }, transport.last.query)
+  end
+
+  def test_creatives_audience_users_and_lead_pages
+    transport
+      .stub(:get, '/ads/creatives', json: { 'data' => { 'creatives' => [{ 'id' => 'cr_1', 'format' => 'image',
+                                                                          'urlTags' => 'utm_source=meta' }] } })
+      .stub(:post, '/ads/creatives', status: 201, json: { 'data' => { 'id' => 'cr_2', 'format' => 'carousel' } })
+      .stub(:post, '/ads/audiences/aud_1/users', json: { 'data' => { 'added' => 2 } })
+      .stub(:post, '/ads/lead-pages', status: 201, json: { 'data' => { 'pageId' => '42', 'backfilled' => 3 } })
+
+    assert_equal 'utm_source=meta',
+                 client.ads.creatives(connection_id: 'conn_1', ad_account_id: 'act_123')[0].url_tags
+
+    created = client.ads.create_creative(
+      workspace_id: 'ws_1', connection_id: 'conn_1', ad_account_id: 'act_123', page_id: '42', name: 'Cards',
+      format: 'carousel', text: 'Swipe', cards: [{ mediaUrl: 'https://yourbrand.com/1.jpg' }]
+    )
+
+    assert_equal 'carousel', created.format
+    assert_equal [{ 'mediaUrl' => 'https://yourbrand.com/1.jpg' }], transport.last.json['cards']
+    refute transport.last.json.key?('headline')
+
+    added = client.ads.add_audience_users('aud_1', workspace_id: 'ws_1', connection_id: 'conn_1',
+                                                   emails: ['a@yourbrand.com', 'b@yourbrand.com'])
+
+    assert_equal 2, added
+    assert_equal({ 'workspace_id' => 'ws_1', 'connection_id' => 'conn_1' }, transport.last.query)
+
+    assert_equal({ 'pageId' => '42', 'backfilled' => 3 },
+                 client.ads.subscribe_lead_page(workspace_id: 'ws_1', connection_id: 'conn_1', page_id: '42'))
+  end
+
+  def test_create_sends_url_tags
+    transport.stub(:post, '/ads', status: 201, json: { 'data' => AD_FIXTURE })
+
+    client.ads.create(
+      workspace_id: 'ws_1', connection_id: 'conn_1', ad_account_id: 'act_123', page_id: '42', name: 'Tagged',
+      goal: 'traffic', budget: { minor: 5000, type: 'daily' }, targeting: { countries: ['US'] }, text: 'Hi',
+      url_tags: 'utm_source=meta'
+    )
+
+    assert_equal 'utm_source=meta', transport.last.json['urlTags']
+  end
 end

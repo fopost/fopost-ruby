@@ -605,4 +605,154 @@ module Fopost
     attribute :leads, [Lead]
     attribute :next_cursor
   end
+
+  # A Meta ad inside an ad set. Read live from Meta, never stored.
+  class NetworkAd < Model
+    attribute :id
+    attribute :name
+    attribute :campaign_id
+    attribute :ad_set_id
+    attribute :creative_id
+    attribute :status
+    attribute :effective_status
+    attribute :created_at, :time
+  end
+
+  class AdSet < Model
+    attribute :id
+    attribute :name
+    attribute :campaign_id
+    attribute :status
+    attribute :effective_status
+    attribute :budget_minor
+    attribute :budget_type
+    attribute :end_at, :time
+    attribute :optimization_goal
+    attribute :created_at, :time
+    attribute :ads, [NetworkAd]
+  end
+
+  class AdCampaign < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :effective_status
+    attribute :objective
+    attribute :budget_minor
+    attribute :budget_type
+    attribute :created_at, :time
+    attribute :ad_sets, [AdSet]
+  end
+
+  # Campaigns with their ad sets and ads, read live from Meta.
+  class AdAccountTree < Model
+    attribute :ad_account_id
+    attribute :currency
+    attribute :workspace_id
+    attribute :campaigns, [AdCampaign]
+  end
+
+  class BulkAdStatusResult < Model
+    attribute :id
+    attribute :level
+    attribute :ok
+    attribute :error
+  end
+
+  class AdCreative < Model
+    attribute :id
+    attribute :name
+    attribute :format
+    attribute :status
+    attribute :title
+    attribute :body
+    attribute :link
+    attribute :thumbnail_url
+    attribute :call_to_action
+    attribute :url_tags
+  end
+
+  class ReachEstimate < Model
+    attribute :lower
+    attribute :upper
+    attribute :ready
+  end
+
+  # `spend_minor` is in the ad account currency, minor units; `ctr` is a percentage.
+  class InsightsMetrics < Model
+    attribute :impressions
+    attribute :reach
+    attribute :clicks
+    attribute :spend_minor
+    attribute :ctr
+    attribute :leads
+  end
+
+  class InsightsBreakdownRow < Model
+    attribute :key
+    attribute :metrics, InsightsMetrics
+  end
+
+  class InsightsTimelineRow < Model
+    attribute :date
+    attribute :metrics, InsightsMetrics
+  end
+
+  class AdInsightsReport < Model
+    attribute :currency
+    attribute :since
+    attribute :until
+    attribute :breakdown_by
+    attribute :totals, InsightsMetrics
+    attribute :breakdown, [InsightsBreakdownRow]
+    attribute :timeline, [InsightsTimelineRow]
+
+    # The Meta id the report covers; `object_id` is taken by Ruby itself.
+    def meta_object_id
+      self['objectId']
+    end
+  end
+
+  class LeadFormDetail < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :leads_count
+    attribute :created_at, :time
+    attribute :questions
+    attribute :page_id
+    attribute :privacy_policy_url
+    attribute :locale
+  end
+
+  # A lead stored from a subscribed Page.
+  class FeedLead < Model
+    attribute :id
+    attribute :lead_id
+    attribute :connection_id
+    attribute :page_id
+    attribute :form_id
+    attribute :ad_id
+    attribute :ad_name
+    attribute :campaign_name
+    attribute :platform
+    attribute :is_organic
+    attribute :fields
+    attribute :submitted_at, :time
+    attribute :workspace_id
+  end
+
+  # One page of the leads feed; pass `next_cursor` back as `cursor:` for the next.
+  class LeadsFeedPage < Model
+    attribute :leads, [FeedLead]
+    attribute :next_cursor
+  end
+
+  class LeadPage < Model
+    attribute :connection_id
+    attribute :page_id
+    attribute :page_name
+    attribute :created_at, :time
+    attribute :workspace_id
+  end
 end

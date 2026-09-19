@@ -29,6 +29,15 @@ All notable changes to this gem are documented here. The format follows
 - `posts.create` takes `account_group_id`.
 - `media.presign`, `complete` and `upload_direct` upload a file straight to storage instead of
   through the API (`posts` scope).
+- `ads` campaign tree: `account_tree`, and create, get, update, delete and duplicate for
+  campaigns, ad sets and network ads, plus `bulk_set_status` (`ads` scope; writes also need
+  `publish`).
+- `ads` creatives (`creatives`, `create_creative`, `get_creative`, `delete_creative`), audiences
+  (`get_audience`, `update_audience`, `delete_audience`, `add_audience_users`), `estimate_reach`,
+  `insights` and `ad_insights`.
+- `ads` lead forms and leads: `get_lead_form`, `archive_lead_form`, `leads_feed` (cursor
+  paginated), `lead_pages`, `subscribe_lead_page` and `unsubscribe_lead_page`.
+- `ads.create` takes `url_tags`.
 
 ## [0.2.0] - 2026-09-19
 

@@ -80,8 +80,9 @@ list, thread, conversation, read, refresh, reply, hide, delete, like, pin, react
 start-conversation, typing and approval endpoints (like, pin, react, edit, start-conversation
 and typing also need `publish`) but not
 `/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
-audiences, targeting search and lead forms; `boost`, `create`, `set_status` and `delete` also
-need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and
+the campaign tree (campaigns, ad sets, network ads), creatives, audiences, reach, insights,
+targeting search, lead forms and the leads feed; `boost`, `create`, `set_status`, `delete`,
+`bulk_set_status` and the campaign/ad set/network ad writes also need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and
 `/validate/media`. `media` (scope `posts`) is direct upload only: `presign`, `complete` and
 `upload_direct`, which PUTs the bytes through `HTTP::Client#put_raw` with no API key. There is
 no `communities`, `webhooks`, `analytics`, or `automations` resource; reach those through

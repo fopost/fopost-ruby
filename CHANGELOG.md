@@ -16,13 +16,14 @@ All notable changes to this gem are documented here. The format follows
 - `InboxItem` reads `liked`, `pinned`, `reaction`, `edited_at` and the `can_like`, `can_pin`,
   `can_edit`, `can_react`, `can_send_media`, `can_quick_reply` and `can_private_reply` flags;
   `InboxAccount` reads `can_start_conversation`.
-
 - `validate` resource: `post`, `length` and `media` preflight checks (`posts` scope).
 - `account_groups` resource: `list`, `create`, `get`, `update`, `delete` and `set_members`
   (`accounts` scope).
 - `accounts.update` renames an account and `accounts.move` moves it to another workspace;
   `accounts.list` takes `group_id`, and `SocialAccount#platform_name` is read.
 - `posts.create` takes `account_group_id`.
+- `media.presign`, `complete` and `upload_direct` upload a file straight to storage instead of
+  through the API (`media` scope).
 
 ## [0.2.0] - 2026-09-19
 

@@ -76,7 +76,9 @@ calls `unwrap` and hands the hash to a model.
 **Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`, `validate`, `media`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
 `#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move`. `inbox` (scope `inbox`) covers the
-list, thread, conversation, read, refresh, reply, hide, delete and approval endpoints but not
+list, thread, conversation, read, refresh, reply, hide, delete, like, pin, react, edit,
+start-conversation, typing and approval endpoints (like, pin, react, edit, start-conversation
+and typing also need `publish`) but not
 `/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
 audiences, targeting search and lead forms; `boost`, `create`, `set_status` and `delete` also
 need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and

@@ -60,6 +60,26 @@ module Fopost
       def delete_telegram_bot_commands(account_id)
         TelegramBotCommands.new(unwrap(http.delete("/accounts/#{account_id}/telegram/commands")))
       end
+
+      # Channels the Slack app can post to in the connected workspace.
+      def list_slack_channels(account_id)
+        parse_list(SlackChannel, unwrap(http.get("/accounts/#{account_id}/slack/channels")))
+      end
+
+      # People in the connected Slack workspace; a member's `id` is the handle for starting a DM.
+      def list_slack_members(account_id)
+        parse_list(SlackMember, unwrap(http.get("/accounts/#{account_id}/slack/members")))
+      end
+
+      def get_slack_identity(account_id)
+        SlackIdentity.new(unwrap(http.get("/accounts/#{account_id}/slack/identity")))
+      end
+
+      # Set the posting name and icon: an omitted keyword keeps a field, nil clears it.
+      def update_slack_identity(account_id, username: UNSET, icon_url: UNSET, icon_emoji: UNSET)
+        body = compact_unset({ 'username' => username, 'icon_url' => icon_url, 'icon_emoji' => icon_emoji })
+        SlackIdentity.new(unwrap(http.request(:patch, "/accounts/#{account_id}/slack/identity", json: body)))
+      end
     end
   end
 end

@@ -628,6 +628,22 @@ post['some_new_field']    # by either spelling
 
 That means a field added server-side never breaks an older client.
 
+## Chatbots and the inbox
+
+The [chat adapter](https://fopost.com/docs/sdks/chat-adapter) turns the FoPost inbox into one send/receive channel for a chatbot
+framework. It ships in the TypeScript and Python SDKs. There is no dedicated adapter here and no
+API change behind it, so the same loop is three pieces with this client:
+
+1. **Verify** the `inbox.message_received` webhook. The payload is ids only, on purpose, so
+   nothing a customer wrote sits in your logs. The [signing scheme](https://fopost.com/docs/webhooks/verification)
+   is HMAC-SHA256 over `{timestamp}.{body}`, refused past a five minute tolerance.
+2. **Read** the item back with `client.inbox.list(workspace_id:, type: 'dm', account_id:)`, filtered to the payload's
+   `accountId` and matched on its `itemId`.
+3. **Answer** with `client.inbox.reply(item.id, text: text)`, or open a thread with
+   `client.inbox.start_conversation(account_id:, handle:, text:)`.
+
+Reading needs the `inbox` scope; answering needs `publish` as well.
+
 ## Development
 
 ```bash

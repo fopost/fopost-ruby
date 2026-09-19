@@ -162,14 +162,14 @@ and `bundle exec rubocop` once on 3.4.
 
 ## Releasing
 
-**The `fopost` gem is NOT yet on RubyGems.** `.github/workflows/release.yml` exists and is
-ready: it triggers on a `v*` tag (or manual dispatch), runs in the `rubygems` GitHub
+**The `fopost` gem is on RubyGems** (0.2.0 at the time of writing). `.github/workflows/release.yml`
+triggers on a `v*` tag (or manual dispatch), runs in the `rubygems` GitHub
 environment, and publishes via `rubygems/release-gem@v1`.
 
 It uses **RubyGems trusted publishing** (OIDC, `permissions: id-token: write`), so **no API-key
-secret is referenced and none should be added.** First publish requires:
+secret is referenced and none should be added.** Publishing depends on:
 
-1. A RubyGems account that owns — or can claim — the `fopost` gem name.
+1. The RubyGems account that owns the `fopost` gem.
 2. A **trusted publisher** configured on rubygems.org for repository `fopost/fopost-ruby`,
    workflow `release.yml`, environment `rubygems`.
 3. The `rubygems` environment created in GitHub repo settings (it gates who can trigger a release).

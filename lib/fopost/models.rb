@@ -48,6 +48,15 @@ module Fopost
     attribute :workspace_id
   end
 
+  # A named set of connected accounts in one workspace.
+  class AccountGroup < Model
+    attribute :id
+    attribute :name
+    attribute :account_ids
+    attribute :created_at, :time
+    attribute :updated_at, :time
+  end
+
   # An account a post is targeted at, plus its per-account delivery state.
   class PostAccount < Model
     attribute :id

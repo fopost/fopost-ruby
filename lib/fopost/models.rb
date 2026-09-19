@@ -206,6 +206,49 @@ module Fopost
     attribute :credits, AiCredits
   end
 
+  # Advisory note from a validate call; never blocks publishing.
+  class ValidateSignal < Model
+    attribute :level
+    attribute :code
+    attribute :message
+  end
+
+  class ValidatePostPlatform < Model
+    attribute :platform
+    attribute :ready
+    attribute :issues
+    attribute :score
+    attribute :signals, [ValidateSignal]
+  end
+
+  class ValidatePostResult < Model
+    attribute :ready
+    attribute :platforms, [ValidatePostPlatform]
+  end
+
+  class ValidateLengthPlatform < Model
+    attribute :platform
+    attribute :length
+    attribute :limit
+    attribute :unit
+    attribute :ok
+    attribute :signals, [ValidateSignal]
+  end
+
+  class ValidateLengthResult < Model
+    attribute :ok
+    attribute :platforms, [ValidateLengthPlatform]
+  end
+
+  class ValidateMediaResult < Model
+    attribute :ok
+    attribute :issues
+    attribute :name
+    attribute :size
+    attribute :mime_type
+    attribute :type
+  end
+
   # `page`, `per_page`, `total` on the inbox list endpoints.
   class InboxPageMeta < Model
     attribute :page

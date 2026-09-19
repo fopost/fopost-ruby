@@ -152,6 +152,22 @@ repurposed = client.ai.repurpose_url(
 
 > **API keys reach `credits` and `generate_caption`.** `rewrite` and `repurpose_url` currently require a signed-in dashboard session and answer `401` to an API key. They are here so the surface is complete once the server opens them up.
 
+## Validate
+
+Check a draft before you create a post. Needs the `posts` scope; nothing is stored.
+
+```ruby
+result = client.validate.post(content: 'Hello', platforms: %w[twitter linkedin],
+                              media: [{ url: 'https://example.com/a.png', mime_type: 'image/png' }])
+result.platforms.reject(&:ready).each { |p| puts "#{p.platform}: #{p.issues.join(', ')}" }
+
+lengths = client.validate.length(text: 'Hello', platforms: %w[twitter bluesky])
+lengths.platforms.each { |p| puts "#{p.platform}: #{p.length}/#{p.limit || 'no limit'} #{p.unit}" }
+
+file = client.validate.media(url: 'https://example.com/a.png')
+puts file.ok ? file.type : file.issues.join(', ')
+```
+
 ## Inbox
 
 Comments, mentions and direct messages on connected accounts. Needs the `inbox` scope.

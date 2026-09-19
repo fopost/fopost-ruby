@@ -11,7 +11,7 @@ error class per status.
 - **Ruby >= 3.1** (`required_ruby_version` in `fopost.gemspec`).
 - **Zero runtime dependencies on purpose** — the gem talks over `net/http` from the standard
   library so it drops into any app without a version conflict. Do not add one.
-- Version `0.2.0` in `lib/fopost/version.rb`, which the gemspec reads.
+- Version `0.3.0` in `lib/fopost/version.rb`, which the gemspec reads.
 
 ## Downstream Packages
 

@@ -3,6 +3,7 @@
 require 'fopost/http/client'
 require 'fopost/models'
 require 'fopost/resources/base'
+require 'fopost/resources/account_groups'
 require 'fopost/resources/accounts'
 require 'fopost/resources/ads'
 require 'fopost/resources/ai'
@@ -10,6 +11,7 @@ require 'fopost/resources/inbox'
 require 'fopost/resources/labels'
 require 'fopost/resources/media'
 require 'fopost/resources/posts'
+require 'fopost/resources/validate'
 require 'fopost/resources/workspaces'
 
 module Fopost
@@ -24,7 +26,7 @@ module Fopost
   class Client
     DEFAULT_BASE_URL = HTTP::Client::DEFAULT_BASE_URL
 
-    attr_reader :posts, :accounts, :workspaces, :labels, :ai, :inbox, :ads, :media
+    attr_reader :posts, :accounts, :account_groups, :workspaces, :labels, :ai, :inbox, :ads, :validate, :media
 
     def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, timeout: HTTP::Client::DEFAULT_TIMEOUT,
                    max_retries: HTTP::Client::DEFAULT_MAX_RETRIES, transport: nil, sleeper: nil)
@@ -45,11 +47,13 @@ module Fopost
 
       @posts = Resources::Posts.new(@http)
       @accounts = Resources::Accounts.new(@http)
+      @account_groups = Resources::AccountGroups.new(@http)
       @workspaces = Resources::Workspaces.new(@http)
       @labels = Resources::Labels.new(@http)
       @ai = Resources::Ai.new(@http)
       @inbox = Resources::Inbox.new(@http)
       @ads = Resources::Ads.new(@http)
+      @validate = Resources::Validate.new(@http)
       @media = Resources::Media.new(@http)
     end
 

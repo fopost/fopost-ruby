@@ -43,6 +43,29 @@ module Fopost
     attribute :is_primary
     attribute :health_status
     attribute :last_health_check, :time
+    attribute :platform_name
+  end
+
+  # The result of renaming an account; `name` is the override when set, else the platform name.
+  class AccountRename < Model
+    attribute :id
+    attribute :name
+    attribute :platform_name
+  end
+
+  # The result of moving an account to another workspace.
+  class AccountMove < Model
+    attribute :id
+    attribute :workspace_id
+  end
+
+  # A named set of connected accounts in one workspace.
+  class AccountGroup < Model
+    attribute :id
+    attribute :name
+    attribute :account_ids
+    attribute :created_at, :time
+    attribute :updated_at, :time
   end
 
   # An account a post is targeted at, plus its per-account delivery state.
@@ -215,6 +238,49 @@ module Fopost
     attribute :title
     attribute :posts, :hash
     attribute :credits, AiCredits
+  end
+
+  # Advisory note from a validate call; never blocks publishing.
+  class ValidateSignal < Model
+    attribute :level
+    attribute :code
+    attribute :message
+  end
+
+  class ValidatePostPlatform < Model
+    attribute :platform
+    attribute :ready
+    attribute :issues
+    attribute :score
+    attribute :signals, [ValidateSignal]
+  end
+
+  class ValidatePostResult < Model
+    attribute :ready
+    attribute :platforms, [ValidatePostPlatform]
+  end
+
+  class ValidateLengthPlatform < Model
+    attribute :platform
+    attribute :length
+    attribute :limit
+    attribute :unit
+    attribute :ok
+    attribute :signals, [ValidateSignal]
+  end
+
+  class ValidateLengthResult < Model
+    attribute :ok
+    attribute :platforms, [ValidateLengthPlatform]
+  end
+
+  class ValidateMediaResult < Model
+    attribute :ok
+    attribute :issues
+    attribute :name
+    attribute :size
+    attribute :mime_type
+    attribute :type
   end
 
   # `page`, `per_page`, `total` on the inbox list endpoints.

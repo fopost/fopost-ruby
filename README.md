@@ -102,6 +102,28 @@ client.posts.update(post_id, schedule_at: nil)   # sends {"schedule_at": null}
 client.posts.update(post_id, title: 'Renamed')   # sends {"title": "Renamed"}
 ```
 
+## Account groups
+
+Name a set of accounts once and post to all of them. Needs the `accounts` scope.
+
+```ruby
+group = client.account_groups.create(workspace_id: workspace.id, name: 'Launch', account_ids: %w[acc_1 acc_2])
+client.account_groups.list(workspace_id: workspace.id)
+client.account_groups.update(group.id, name: 'Launch week')
+client.account_groups.set_members(group.id, %w[acc_1 acc_3])   # replaces the members
+client.account_groups.delete(group.id)
+
+client.posts.create(workspace_id: workspace.id, content: 'Hello', account_group_id: group.id)
+client.accounts.list(group_id: group.id)
+```
+
+Accounts can also be renamed and moved between workspaces you own:
+
+```ruby
+client.accounts.update(account_id, display_name: 'Brand HQ')   # nil restores the platform name
+client.accounts.move(account_id, workspace_id: other_workspace.id)
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.
@@ -151,6 +173,22 @@ repurposed = client.ai.repurpose_url(
 ```
 
 > **API keys reach `credits` and `generate_caption`.** `rewrite` and `repurpose_url` currently require a signed-in dashboard session and answer `401` to an API key. They are here so the surface is complete once the server opens them up.
+
+## Validate
+
+Check a draft before you create a post. Needs the `posts` scope; nothing is stored.
+
+```ruby
+result = client.validate.post(content: 'Hello', platforms: %w[twitter linkedin],
+                              media: [{ url: 'https://example.com/a.png', mime_type: 'image/png' }])
+result.platforms.reject(&:ready).each { |p| puts "#{p.platform}: #{p.issues.join(', ')}" }
+
+lengths = client.validate.length(text: 'Hello', platforms: %w[twitter bluesky])
+lengths.platforms.each { |p| puts "#{p.platform}: #{p.length}/#{p.limit || 'no limit'} #{p.unit}" }
+
+file = client.validate.media(url: 'https://example.com/a.png')
+puts file.ok ? file.type : file.issues.join(', ')
+```
 
 ## Inbox
 

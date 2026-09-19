@@ -44,6 +44,49 @@ class ResourcesTest < Minitest::Test
     assert_equal({ 'status' => 'healthy' }, client.accounts.health('acc_1'))
   end
 
+  def test_accounts_list_filters_by_group
+    transport.stub(:get, '/accounts', json: { 'data' => [ACCOUNT_FIXTURE.merge('platformName' => 'FoPost HQ')] })
+
+    accounts = client.accounts.list(group_id: 'grp_1')
+
+    assert_equal 'FoPost HQ', accounts[0].platform_name
+    assert_equal({ 'group_id' => 'grp_1' }, transport.last.query)
+  end
+
+  def test_account_update_sends_the_display_name_and_nil_resets_it
+    transport.stub(:patch, '/accounts/acc_1',
+                   json: { 'data' => { 'id' => 'acc_1', 'name' => 'Brand', 'platform_name' => 'FoPost' } })
+
+    renamed = client.accounts.update('acc_1', display_name: 'Brand')
+
+    assert_equal 'Brand', renamed.name
+    assert_equal 'FoPost', renamed.platform_name
+    assert_equal({ 'display_name' => 'Brand' }, transport.last.json)
+
+    client.accounts.update('acc_1', display_name: nil)
+
+    assert_equal({ 'display_name' => nil }, transport.last.json)
+  end
+
+  def test_account_move_posts_the_target_workspace
+    transport.stub(:post, '/accounts/acc_1/move', json: { 'data' => { 'id' => 'acc_1', 'workspace_id' => 'ws_2' } })
+
+    assert_equal 'ws_2', client.accounts.move('acc_1', workspace_id: 'ws_2').workspace_id
+    assert_equal({ 'workspace_id' => 'ws_2' }, transport.last.json)
+  end
+
+  def test_account_move_conflict_keeps_the_blocking_tables_on_the_error
+    transport.stub(:post, '/accounts/acc_1/move', status: 409,
+                                                  json: { 'error' => 'move_blocked', 'message' => 'Account has history',
+                                                          'blocking_tables' => ['posts'] })
+
+    error = assert_raises(Fopost::Error) { client.accounts.move('acc_1', workspace_id: 'ws_2') }
+
+    assert_equal 409, error.status
+    assert_equal 'move_blocked', error.code
+    assert_equal ['posts'], error.body['blocking_tables']
+  end
+
   def test_labels_list
     transport.stub(:get, '/labels', json: { 'data' => [LABEL_FIXTURE] })
 

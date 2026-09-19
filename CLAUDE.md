@@ -54,7 +54,7 @@ lib/fopost/
     response.rb            status + downcased headers + raw body, pre-decode
   resources/
     base.rb                unwrap/parse_list/compact_unset/iso8601 helpers
-    posts.rb accounts.rb workspaces.rb labels.rb ai.rb inbox.rb ads.rb
+    posts.rb accounts.rb account_groups.rb workspaces.rb labels.rb ai.rb inbox.rb ads.rb validate.rb media.rb
 ```
 
 **Request flow.** `client.posts.create(...)` → `Resources::Posts` normalises content and
@@ -73,13 +73,14 @@ calls `unwrap` and hands the hash to a model.
   named fields (`Resources::Base#compact_unset`).
 - `Resources::Posts#each` / `#each_page` walk the list endpoint a page at a time.
 
-**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`, `media`.
+**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`, `validate`, `media`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
-`#list`/`#get`, `accounts` is `#list`/`#get`/`#health`. `inbox` (scope `inbox`) covers the
+`#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move`. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, reply, hide, delete and approval endpoints but not
 `/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
 audiences, targeting search and lead forms; `boost`, `create`, `set_status` and `delete` also
-need `publish`. `media` (scope `posts`) is direct upload only: `presign`, `complete` and
+need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and
+`/validate/media`. `media` (scope `posts`) is direct upload only: `presign`, `complete` and
 `upload_direct`, which PUTs the bytes through `HTTP::Client#put_raw` with no API key. There is
 no `communities`, `webhooks`, `analytics`, or `automations` resource; reach those through
 `Fopost::Client#request` until one is added.

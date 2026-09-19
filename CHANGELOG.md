@@ -4,6 +4,17 @@ All notable changes to this gem are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gem follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `validate` resource: `post`, `length` and `media` preflight checks (`posts` scope).
+- `account_groups` resource: `list`, `create`, `get`, `update`, `delete` and `set_members`
+  (`accounts` scope).
+- `accounts.update` renames an account and `accounts.move` moves it to another workspace;
+  `accounts.list` takes `group_id`, and `SocialAccount#platform_name` is read.
+- `posts.create` takes `account_group_id`.
+
 ## [0.2.0] - 2026-09-19
 
 ### Added
@@ -26,5 +37,6 @@ Initial release.
 - Response models that accept either wire casing and keep unknown fields on `#raw`.
 - A pluggable transport, so the HTTP stack can be swapped or stubbed.
 
+[Unreleased]: https://github.com/fopost/fopost-ruby/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.1.0

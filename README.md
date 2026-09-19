@@ -102,6 +102,28 @@ client.posts.update(post_id, schedule_at: nil)   # sends {"schedule_at": null}
 client.posts.update(post_id, title: 'Renamed')   # sends {"title": "Renamed"}
 ```
 
+## Account groups
+
+Name a set of accounts once and post to all of them. Needs the `accounts` scope.
+
+```ruby
+group = client.account_groups.create(workspace_id: workspace.id, name: 'Launch', account_ids: %w[acc_1 acc_2])
+client.account_groups.list(workspace_id: workspace.id)
+client.account_groups.update(group.id, name: 'Launch week')
+client.account_groups.set_members(group.id, %w[acc_1 acc_3])   # replaces the members
+client.account_groups.delete(group.id)
+
+client.posts.create(workspace_id: workspace.id, content: 'Hello', account_group_id: group.id)
+client.accounts.list(group_id: group.id)
+```
+
+Accounts can also be renamed and moved between workspaces you own:
+
+```ruby
+client.accounts.update(account_id, display_name: 'Brand HQ')   # nil restores the platform name
+client.accounts.move(account_id, workspace_id: other_workspace.id)
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.

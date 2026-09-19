@@ -54,7 +54,7 @@ lib/fopost/
     response.rb            status + downcased headers + raw body, pre-decode
   resources/
     base.rb                unwrap/parse_list/compact_unset/iso8601 helpers
-    posts.rb accounts.rb workspaces.rb labels.rb ai.rb inbox.rb ads.rb validate.rb
+    posts.rb accounts.rb account_groups.rb workspaces.rb labels.rb ai.rb inbox.rb ads.rb validate.rb
 ```
 
 **Request flow.** `client.posts.create(...)` → `Resources::Posts` normalises content and
@@ -75,7 +75,7 @@ calls `unwrap` and hands the hash to a model.
 
 **Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`, `validate`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
-`#list`/`#get`, `accounts` is `#list`/`#get`/`#health`. `inbox` (scope `inbox`) covers the
+`#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move`. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, reply, hide, delete and approval endpoints but not
 `/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
 audiences, targeting search and lead forms; `boost`, `create`, `set_status` and `delete` also

@@ -9,6 +9,11 @@ All notable changes to this gem are documented here. The format follows
 ### Added
 
 - `validate` resource: `post`, `length` and `media` preflight checks (`posts` scope).
+- `account_groups` resource: `list`, `create`, `get`, `update`, `delete` and `set_members`
+  (`accounts` scope).
+- `accounts.update` renames an account and `accounts.move` moves it to another workspace;
+  `accounts.list` takes `group_id`, and `SocialAccount#platform_name` is read.
+- `posts.create` takes `account_group_id`.
 
 ## [0.2.0] - 2026-09-19
 

@@ -73,14 +73,16 @@ calls `unwrap` and hands the hash to a model.
   named fields (`Resources::Base#compact_unset`).
 - `Resources::Posts#each` / `#each_page` walk the list endpoint a page at a time.
 
-**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`.
+**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`, `media`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
 `#list`/`#get`, `accounts` is `#list`/`#get`/`#health`. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, reply, hide, delete and approval endpoints but not
 `/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
 audiences, targeting search and lead forms; `boost`, `create`, `set_status` and `delete` also
-need `publish`. There is no `communities`, `webhooks`, `analytics`, `automations`, or `media`
-resource; reach those through `Fopost::Client#request` until one is added.
+need `publish`. `media` (scope `posts`) is direct upload only: `presign`, `complete` and
+`upload_direct`, which PUTs the bytes through `HTTP::Client#put_raw` with no API key. There is
+no `communities`, `webhooks`, `analytics`, or `automations` resource; reach those through
+`Fopost::Client#request` until one is added.
 
 ## API Contract
 

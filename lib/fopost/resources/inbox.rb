@@ -113,9 +113,16 @@ module Fopost
         InboxItem.new(unwrap(http.request(:patch, "/inbox/#{item_id}", json: body)))
       end
 
-      # Send the reply on the platform as the connected account.
-      def reply(item_id, text:)
-        InboxReplyResult.new(unwrap(http.post("/inbox/#{item_id}/reply", { 'text' => text })))
+      # Edit a comment the account wrote, on the platform. Needs `publish`.
+      def edit_comment(item_id, text:)
+        InboxItem.new(unwrap(http.request(:patch, "/inbox/#{item_id}", json: { 'text' => text })))
+      end
+
+      # Send the reply on the platform as the connected account. `text` may be
+      # left out when `media_ids` is given; `media_ids` and `quick_replies` need `publish`.
+      def reply(item_id, text: nil, media_ids: nil, quick_replies: nil)
+        body = compact_nil('text' => text, 'media_ids' => media_ids, 'quick_replies' => quick_replies)
+        InboxReplyResult.new(unwrap(http.post("/inbox/#{item_id}/reply", body)))
       end
 
       def hide(item_id)
@@ -126,10 +133,52 @@ module Fopost
         InboxItem.new(unwrap(http.post("/inbox/#{item_id}/unhide")))
       end
 
-      # Delete the comment on the platform.
+      # Delete the comment on the platform, or our own reply (that also needs `publish`).
       def delete(item_id)
         http.delete("/inbox/#{item_id}")
         nil
+      end
+
+      # Like the item (an upvote on Reddit, a favourite on Mastodon). Needs `publish`.
+      def like(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/like")))
+      end
+
+      def unlike(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/unlike")))
+      end
+
+      # Pin our own comment. Needs `publish`.
+      def pin(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/pin")))
+      end
+
+      def unpin(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/unpin")))
+      end
+
+      # React to a DM with an emoji; `nil` removes ours. Needs `publish`.
+      def react(item_id, reaction:)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/react", { 'reaction' => reaction })))
+      end
+
+      # Open a DM: by `handle` from `account_id`, or as a private reply to the
+      # inbox comment `comment_id`. Needs `publish`.
+      def start_conversation(text:, account_id: nil, handle: nil, comment_id: nil, media_ids: nil)
+        body = compact_nil(
+          'account_id' => account_id,
+          'handle' => handle,
+          'comment_id' => comment_id,
+          'text' => text,
+          'media_ids' => media_ids
+        )
+        InboxStartedConversation.new(unwrap(http.post('/inbox/conversations', body)))
+      end
+
+      # Show or clear the typing indicator in a DM thread. Returns whether it is on. Needs `publish`.
+      def set_typing(conversation_id, account_id:, on: true)
+        body = { 'account_id' => account_id, 'on' => on }
+        as_hash(unwrap(http.post("/inbox/conversations/#{conversation_id}/typing", body)))['typing']
       end
 
       # Replies an automation or the agent drafted that a person still has to send.

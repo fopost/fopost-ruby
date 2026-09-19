@@ -335,6 +335,46 @@ upload.upload_url   # PUT the bytes here with upload.headers
 client.media.complete(upload.upload_id)
 ```
 
+## Analytics
+
+```ruby
+# How long a post keeps earning, from the repeated readings of each post
+decay = client.analytics.decay(days: 30)
+puts decay.half_life_bucket # => "1h_3h"
+
+# Whether posting more earned more
+cadence = client.analytics.frequency(days: 90)
+puts cadence.best&.label # => "3-5 a week"
+
+# Every reading held for one post, with what moved between them
+timeline = client.analytics.timeline(post.id)
+
+# Mirror the metrics into your own store, without refetching everything
+cursor = nil
+loop do
+  page = client.analytics.changes(since: cursor)
+  save(page.changes)
+  break unless page.has_more && page.cursor
+
+  cursor = page.cursor
+end
+
+# Refresh one post now instead of waiting for the next collection run
+client.analytics.collect_post(post.id)
+
+# Posts on the account that never went out through FoPost
+client.analytics.native_posts(accounts.first.id).each do |native|
+  puts "#{native.permalink} #{native.metrics.engagements}"
+end
+```
+
+A post is addressed by its FoPost id or by its permalink, so a post made by
+hand on the network works the same way:
+
+```ruby
+client.analytics.timeline('https://x.com/acme/status/1')
+```
+
 ## Errors
 
 Every non-2xx response raises. All of them are rescuable as `Fopost::Error`.

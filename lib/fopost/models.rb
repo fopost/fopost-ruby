@@ -211,6 +211,160 @@ module Fopost
     attribute :external_url
   end
 
+  # ── Analytics ────────────────────────────────────────────────────
+
+  # One age band of GET /analytics/decay.
+  class DecayBand < Model
+    attribute :bucket
+    attribute :label
+    # Posts with at least one reading in this band.
+    attribute :posts
+    attribute :avg_engagements
+    attribute :avg_impressions
+    # Mean share of the post's final engagement reached by this age, 0-1.
+    attribute :share_of_final
+  end
+
+  # How engagement accumulates as a post ages.
+  class ContentDecay < Model
+    attribute :days
+    attribute :posts_measured
+    # First band where the average post had passed half its final engagement.
+    attribute :half_life_bucket
+    attribute :bands, [DecayBand]
+  end
+
+  class FrequencyWeek < Model
+    # Monday of the week, UTC, as YYYY-MM-DD.
+    attribute :week_start
+    attribute :posts
+    attribute :engagements
+    attribute :avg_engagements_per_post
+  end
+
+  class FrequencyBand < Model
+    attribute :band
+    attribute :label
+    attribute :weeks
+    attribute :posts
+    attribute :avg_posts_per_week
+    attribute :avg_engagements_per_post
+    # Engagements over reach, impressions as the stand-in; nil with neither.
+    attribute :engagement_rate
+  end
+
+  # Weekly cadence set against what each cadence earned per post.
+  class PostingFrequency < Model
+    attribute :days
+    attribute :weeks, [FrequencyWeek]
+    attribute :bands, [FrequencyBand]
+    # The cadence that earned the most per post; nil without posts.
+    attribute :best, FrequencyBand
+  end
+
+  # What moved between one timeline point and the one before it.
+  class TimelineDelta < Model
+    attribute :impressions
+    attribute :reach
+    attribute :engagements
+    attribute :likes
+    attribute :comments
+    attribute :shares
+  end
+
+  class TimelinePoint < Model
+    attribute :at, :time
+    # Minutes since publication; nil when the network never said when.
+    attribute :age_minutes
+    attribute :impressions
+    attribute :reach
+    attribute :engagements
+    attribute :likes
+    attribute :comments
+    attribute :shares
+    attribute :video_views
+    attribute :delta, TimelineDelta
+  end
+
+  # One delivery's readings: the same post on two networks decays differently.
+  class TimelineDelivery < Model
+    attribute :account_id
+    attribute :platform
+    attribute :username
+    attribute :external_post_id
+    attribute :posted_at, :time
+    attribute :points, [TimelinePoint]
+  end
+
+  # Every reading held for one post, one timeline per delivery.
+  class PostTimeline < Model
+    # nil when the post was made natively on the network.
+    attribute :post_id
+    attribute :deliveries, [TimelineDelivery]
+  end
+
+  class MetricChange < Model
+    attribute :account_id
+    attribute :platform
+    attribute :external_post_id
+    # nil for a post made natively on the network.
+    attribute :post_id
+    attribute :posted_at, :time
+    attribute :fetched_at, :time
+    attribute :impressions
+    attribute :reach
+    attribute :engagements
+    attribute :likes
+    attribute :comments
+    attribute :shares
+  end
+
+  # Readings since a cursor, with the cursor to pass next time.
+  class MetricChangePage < Model
+    attribute :since, :time
+    # Feed back as `since` to continue; nil when nothing changed.
+    attribute :cursor, :time
+    attribute :has_more
+    attribute :changes, [MetricChange]
+  end
+
+  class CollectPostDelivery < Model
+    attribute :account_id
+    attribute :platform
+    attribute :external_post_id
+    attribute :collected
+    attribute :fetched_at, :time
+    # Why the refresh did not happen.
+    attribute :message
+  end
+
+  class CollectPostResult < Model
+    attribute :collected
+    attribute :deliveries, [CollectPostDelivery]
+  end
+
+  class NativePostMetrics < Model
+    attribute :impressions
+    attribute :reach
+    attribute :engagements
+    attribute :likes
+    attribute :comments
+    attribute :shares
+    attribute :video_views
+  end
+
+  # A post on the account that never went out through FoPost.
+  class NativePost < Model
+    attribute :external_post_id
+    attribute :text
+    attribute :permalink
+    attribute :thumbnail_url
+    attribute :media_type
+    attribute :posted_at, :time
+    attribute :fetched_at, :time
+    attribute :metrics, NativePostMetrics
+  end
+
   class PageMeta < Model
     attribute :current_page
     attribute :per_page

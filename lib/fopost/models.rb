@@ -32,6 +32,29 @@ module Fopost
     attribute :is_primary
     attribute :health_status
     attribute :last_health_check, :time
+    attribute :platform_name
+  end
+
+  # The result of renaming an account; `name` is the override when set, else the platform name.
+  class AccountRename < Model
+    attribute :id
+    attribute :name
+    attribute :platform_name
+  end
+
+  # The result of moving an account to another workspace.
+  class AccountMove < Model
+    attribute :id
+    attribute :workspace_id
+  end
+
+  # A named set of connected accounts in one workspace.
+  class AccountGroup < Model
+    attribute :id
+    attribute :name
+    attribute :account_ids
+    attribute :created_at, :time
+    attribute :updated_at, :time
   end
 
   # An account a post is targeted at, plus its per-account delivery state.

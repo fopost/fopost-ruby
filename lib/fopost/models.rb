@@ -389,6 +389,31 @@ module Fopost
     attribute :permissions
   end
 
+  # One metric a network reports under its own name. `key` is the platform's own
+  # name and is stable; `label` is ours and may be reworded. `value` is a number
+  # for every kind but `series`, which is an array of points.
+  class PlatformMetricRow < Model
+    attribute :key
+    attribute :label
+    attribute :kind
+    attribute :value
+  end
+
+  # One side of a per-network metric set: the account itself, or its newest
+  # measured post. `external_post_id` is nil on the account side.
+  class PlatformMetricsBlock < Model
+    attribute :fetched_at
+    attribute :external_post_id
+    attribute :metrics, [PlatformMetricRow]
+  end
+
+  # What only this network reports, in its own vocabulary.
+  class AccountPlatformMetrics < Model
+    attribute :platform
+    attribute :account, PlatformMetricsBlock
+    attribute :post, PlatformMetricsBlock
+  end
+
   # A named set of connected accounts in one workspace.
   class AccountGroup < Model
     attribute :id

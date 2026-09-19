@@ -176,6 +176,16 @@ client.accounts.add_discord_member_role(account_id, role.id, members[0].id)
 client.accounts.send_discord_dm(account_id, members[0].id, 'Welcome aboard')
 ```
 
+Read the numbers only an account's own network reports, in its own vocabulary — ad-break earnings, story
+taps, a retention curve, the search terms behind a listing. A network whose metric access has not been
+granted yet answers `503`:
+
+```ruby
+metrics = client.accounts.platform_metrics(account_id)
+metrics.account.metrics.each { |row| puts "#{row.label}: #{row.value}" }
+metrics.post.external_post_id
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.

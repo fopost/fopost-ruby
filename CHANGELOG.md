@@ -6,14 +6,24 @@ All notable changes to this gem are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-19
+
 ### Added
 
+- `inbox.like`, `unlike`, `pin`, `unpin`, `react`, `edit_comment`, `start_conversation` and
+  `set_typing` (`inbox` scope, plus `publish`).
+- `inbox.reply` takes `media_ids` and `quick_replies`; `text` is optional when `media_ids` is given.
+- `InboxItem` reads `liked`, `pinned`, `reaction`, `edited_at` and the `can_like`, `can_pin`,
+  `can_edit`, `can_react`, `can_send_media`, `can_quick_reply` and `can_private_reply` flags;
+  `InboxAccount` reads `can_start_conversation`.
 - `validate` resource: `post`, `length` and `media` preflight checks (`posts` scope).
 - `account_groups` resource: `list`, `create`, `get`, `update`, `delete` and `set_members`
   (`accounts` scope).
 - `accounts.update` renames an account and `accounts.move` moves it to another workspace;
   `accounts.list` takes `group_id`, and `SocialAccount#platform_name` is read.
 - `posts.create` takes `account_group_id`.
+- `media.presign`, `complete` and `upload_direct` upload a file straight to storage instead of
+  through the API (`posts` scope).
 
 ## [0.2.0] - 2026-09-19
 
@@ -37,6 +47,7 @@ Initial release.
 - Response models that accept either wire casing and keep unknown fields on `#raw`.
 - A pluggable transport, so the HTTP stack can be swapped or stubbed.
 
-[Unreleased]: https://github.com/fopost/fopost-ruby/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/fopost/fopost-ruby/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.3.0
 [0.2.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.1.0

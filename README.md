@@ -212,6 +212,18 @@ client.inbox.refresh(workspace_id: workspace.id)
 client.inbox.approvals(workspace_id: workspace.id).each { |a| client.inbox.approve_reply(a.id) }
 ```
 
+Acting on the platform also needs the `publish` scope. Each item's `can_*` flags say which actions its network supports.
+
+```ruby
+client.inbox.like(item.id)                               # unlike, pin, unpin work the same way
+client.inbox.react(item.id, reaction: '❤️')               # reaction: nil removes ours
+client.inbox.edit_comment(item.id, text: 'Fixed a typo')
+client.inbox.reply(item.id, media_ids: [media.id], quick_replies: %w[Yes No])
+client.inbox.start_conversation(account_id: account.id, handle: 'jordanvale', text: 'Hi!')
+client.inbox.start_conversation(comment_id: item.id, text: 'Sent you the details')
+client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
+```
+
 ## Ads
 
 Meta ads, audiences and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status` and `delete` spend money and also need `publish`. A boost or ad starts paused unless you pass `paused: false`.

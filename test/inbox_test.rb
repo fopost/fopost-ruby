@@ -169,6 +169,87 @@ class InboxTest < Minitest::Test
     assert_equal 'DELETE', transport.last.method
   end
 
+  def test_reply_sends_media_and_quick_replies_without_text
+    transport.stub(:post, '/inbox/inb_1/reply', json: { 'data' => { 'item' => INBOX_ITEM_FIXTURE, 'reply' => {} } })
+
+    client.inbox.reply('inb_1', media_ids: %w[med_1], quick_replies: %w[Yes No])
+
+    assert_equal({ 'media_ids' => %w[med_1], 'quick_replies' => %w[Yes No] }, transport.last.json)
+  end
+
+  def test_edit_comment_patches_text
+    transport.stub(:patch, '/inbox/inb_1', json: {
+                     'data' => INBOX_ITEM_FIXTURE.merge('text' => 'Fixed', 'editedAt' => '2026-09-18T12:00:00.000Z',
+                                                        'canEdit' => true)
+                   })
+
+    item = client.inbox.edit_comment('inb_1', text: 'Fixed')
+
+    assert_equal 'PATCH', transport.last.method
+    assert_equal({ 'text' => 'Fixed' }, transport.last.json)
+    assert_equal Time.utc(2026, 9, 18, 12), item.edited_at
+    assert item.can_edit
+  end
+
+  def test_like_unlike_pin_and_unpin
+    transport
+      .stub(:post, '/inbox/inb_1/like',
+            json: { 'data' => INBOX_ITEM_FIXTURE.merge('liked' => true, 'canLike' => true) })
+      .stub(:post, '/inbox/inb_1/unlike', json: { 'data' => INBOX_ITEM_FIXTURE.merge('liked' => false) })
+      .stub(:post, '/inbox/inb_1/pin', json: { 'data' => INBOX_ITEM_FIXTURE.merge('pinned' => true, 'canPin' => true) })
+      .stub(:post, '/inbox/inb_1/unpin', json: { 'data' => INBOX_ITEM_FIXTURE.merge('pinned' => false) })
+
+    liked = client.inbox.like('inb_1')
+
+    assert liked.liked
+    assert liked.can_like
+    refute client.inbox.unlike('inb_1').liked
+    assert client.inbox.pin('inb_1').pinned
+    refute client.inbox.unpin('inb_1').pinned
+    assert_equal '/v1/inbox/inb_1/unpin', transport.last.path
+    assert_nil transport.last.body
+  end
+
+  def test_react_sends_the_reaction_and_null_to_remove
+    transport.stub(:post, '/inbox/inb_1/react', json: { 'data' => INBOX_ITEM_FIXTURE.merge('reaction' => '❤️') })
+
+    assert_equal '❤️', client.inbox.react('inb_1', reaction: '❤️').reaction
+    assert_equal({ 'reaction' => '❤️' }, transport.last.json)
+
+    client.inbox.react('inb_1', reaction: nil)
+
+    assert_equal({ 'reaction' => nil }, transport.last.json)
+  end
+
+  def test_start_conversation_by_handle_and_by_comment
+    transport.stub(:post, '/inbox/conversations', status: 201, json: {
+                     'data' => { 'conversationId' => 'conv_2', 'item' => INBOX_ITEM_FIXTURE.merge('type' => 'dm') }
+                   })
+
+    started = client.inbox.start_conversation(account_id: 'acc_1', handle: 'jordanvale', text: 'Hi')
+
+    assert_equal({ 'account_id' => 'acc_1', 'handle' => 'jordanvale', 'text' => 'Hi' }, transport.last.json)
+    assert_equal 'conv_2', started.conversation_id
+    assert_equal 'dm', started.item.type
+
+    client.inbox.start_conversation(comment_id: 'inb_1', text: 'Sent you a DM', media_ids: %w[med_1])
+
+    assert_equal({ 'comment_id' => 'inb_1', 'text' => 'Sent you a DM', 'media_ids' => %w[med_1] }, transport.last.json)
+  end
+
+  def test_set_typing
+    transport.stub(:post, '/inbox/conversations/conv_1/typing', json: { 'data' => { 'typing' => false } })
+
+    refute client.inbox.set_typing('conv_1', account_id: 'acc_1', on: false)
+    assert_equal({ 'account_id' => 'acc_1', 'on' => false }, transport.last.json)
+  end
+
+  def test_accounts_read_can_start_conversation
+    transport.stub(:get, '/inbox/accounts', json: { 'data' => [{ 'id' => 'acc_1', 'canStartConversation' => true }] })
+
+    assert client.inbox.accounts[0].can_start_conversation
+  end
+
   def test_approvals_approve_and_reject
     transport
       .stub(:get, '/inbox/approvals', json: { 'data' => [{ 'id' => 12, 'source' => 'agent', 'reply' => 'Draft',

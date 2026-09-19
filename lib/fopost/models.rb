@@ -345,8 +345,19 @@ module Fopost
     attribute :created_at, :time
     attribute :can_reply
     attribute :hidden
+    attribute :liked
+    attribute :pinned
+    attribute :reaction
+    attribute :edited_at, :time
     attribute :can_hide
     attribute :can_delete
+    attribute :can_like
+    attribute :can_pin
+    attribute :can_edit
+    attribute :can_react
+    attribute :can_send_media
+    attribute :can_quick_reply
+    attribute :can_private_reply
     attribute :post, :hash
     attribute :post_context, InboxPostContext
     attribute :account, InboxAccountRef
@@ -391,6 +402,7 @@ module Fopost
     attribute :pending_reason
     attribute :dm_supported
     attribute :dm_pending_reason
+    attribute :can_start_conversation
   end
 
   class InboxPlatform < Model
@@ -412,6 +424,12 @@ module Fopost
   class InboxReplyResult < Model
     attribute :item, InboxItem
     attribute :reply, :hash
+  end
+
+  # A DM opened by handle or as a private reply to a comment.
+  class InboxStartedConversation < Model
+    attribute :conversation_id
+    attribute :item, InboxItem
   end
 
   class InboxRefreshResult < Model

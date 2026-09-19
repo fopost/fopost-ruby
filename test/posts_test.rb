@@ -52,6 +52,15 @@ class PostsTest < Minitest::Test
                  }, transport.last.json)
   end
 
+  def test_create_with_an_account_group
+    transport.stub(:post, '/posts', status: 201, json: POST_FIXTURE)
+
+    client.posts.create(workspace_id: 'ws_1', content: 'Hi', account_group_id: 'grp_1')
+
+    assert_equal 'grp_1', transport.last.json['account_group_id']
+    assert_empty transport.last.json['accounts']
+  end
+
   def test_create_accepts_account_objects_blocks_and_times
     transport.stub(:post, '/posts', status: 201, json: POST_FIXTURE)
 

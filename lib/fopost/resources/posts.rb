@@ -66,8 +66,9 @@ module Fopost
       # Create a draft or a scheduled post.
       #
       # `status` is "draft" or "scheduled"; a scheduled post needs `schedule_at`.
-      # To send a post out now, create it and call {#publish}.
-      def create(workspace_id:, content:, accounts: [], status: 'draft', schedule_at: nil,
+      # To send a post out now, create it and call {#publish}. `account_group_id`
+      # adds that group's accounts to `accounts`, so `accounts` may be left empty.
+      def create(workspace_id:, content:, accounts: [], account_group_id: nil, status: 'draft', schedule_at: nil,
                  labels: nil, title: nil, summary: nil, content_type: nil, settings: nil, **extra)
         body = {
           'workspace_id' => workspace_id,
@@ -77,6 +78,7 @@ module Fopost
         }
         body.merge!(
           compact_nil(
+            'account_group_id' => account_group_id,
             'schedule_at' => iso8601(schedule_at),
             'labels' => labels&.to_a,
             'title' => title,

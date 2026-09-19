@@ -87,6 +87,46 @@ class ResourcesTest < Minitest::Test
     assert_equal ['posts'], error.body['blocking_tables']
   end
 
+  def test_create_telegram_connect_code_sends_the_workspace
+    data = { 'code' => 'abc123', 'command' => '/connect abc123', 'bot_username' => 'fopost_bot',
+             'deep_link' => nil, 'group_link' => nil, 'expires_at' => '2026-09-19T12:15:00Z' }
+    transport.stub(:post, '/accounts/telegram/connect-code', status: 201, json: { 'data' => data })
+
+    code = client.accounts.create_telegram_connect_code(workspace_id: 'ws_1')
+
+    assert_equal 'abc123', code.code
+    assert_equal 'fopost_bot', code.bot_username
+    assert_nil code.deep_link
+    assert_kind_of Time, code.expires_at
+    assert_equal({ 'workspaceId' => 'ws_1' }, transport.last.json)
+  end
+
+  def test_get_telegram_connect_status_sends_the_code
+    transport.stub(:get, '/accounts/telegram/connect-code/status',
+                   json: { 'data' => { 'status' => 'failed', 'account_id' => nil, 'reason' => 'card_required' } })
+
+    status = client.accounts.get_telegram_connect_status('abc123')
+
+    assert_equal 'failed', status.status
+    assert_equal 'card_required', status.reason
+    assert_equal({ 'code' => 'abc123' }, transport.last.query)
+  end
+
+  def test_telegram_bot_commands_get_set_and_delete
+    menu = { 'data' => { 'commands' => [{ 'command' => 'start', 'description' => 'Start' }] } }
+    transport.stub(:get, '/accounts/acc_1/telegram/commands', json: menu)
+    transport.stub(:put, '/accounts/acc_1/telegram/commands', json: menu)
+    transport.stub(:delete, '/accounts/acc_1/telegram/commands', json: { 'data' => { 'commands' => [] } })
+
+    assert_equal 'start', client.accounts.get_telegram_bot_commands('acc_1').commands[0].command
+
+    set = client.accounts.set_telegram_bot_commands('acc_1', [{ command: 'start', description: 'Start' }])
+
+    assert_equal 'Start', set.commands[0].description
+    assert_equal({ 'commands' => [{ 'command' => 'start', 'description' => 'Start' }] }, transport.last.json)
+    assert_empty client.accounts.delete_telegram_bot_commands('acc_1').commands
+  end
+
   def test_labels_list
     transport.stub(:get, '/labels', json: { 'data' => [LABEL_FIXTURE] })
 

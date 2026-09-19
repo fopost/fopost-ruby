@@ -59,6 +59,34 @@ module Fopost
     attribute :workspace_id
   end
 
+  # A one-time code that connects a Telegram chat; send `command` to the bot there.
+  class TelegramConnectCode < Model
+    attribute :code
+    attribute :command
+    attribute :bot_username
+    attribute :deep_link
+    attribute :group_link
+    attribute :expires_at, :time
+  end
+
+  # Where a connect code stands: `pending`, `connected`, `failed` or `expired`.
+  class TelegramConnectStatus < Model
+    attribute :status
+    attribute :account_id
+    attribute :reason
+  end
+
+  # One entry in the bot's command menu.
+  class TelegramBotCommand < Model
+    attribute :command
+    attribute :description
+  end
+
+  # The command menu the bot shows in a connected chat.
+  class TelegramBotCommands < Model
+    attribute :commands, [TelegramBotCommand]
+  end
+
   # A named set of connected accounts in one workspace.
   class AccountGroup < Model
     attribute :id

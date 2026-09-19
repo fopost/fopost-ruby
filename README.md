@@ -212,6 +212,39 @@ file = client.validate.media(url: 'https://example.com/a.png')
 puts file.ok ? file.type : file.issues.join(', ')
 ```
 
+## Blogs, articles and products
+
+Content a connected site already owns: the articles on a WordPress site or a
+Shopify store's blog, and a Shopify store's products. Every id here is the
+platform's own, never a FoPost id. Reads need the `posts` scope; anything that
+changes the site needs `publish` as well.
+
+```ruby
+blogs = client.blogs.list_blogs(account_id)
+# Shopify reports every blog; WordPress reports one, under the id 'default'.
+
+articles = client.blogs.list_articles(account_id, blogs.first.id, status: 'draft')
+articles.first.title
+articles.first.status            # published, draft, pending, scheduled
+
+article = client.blogs.create_article(
+  account_id, blogs.first.id,
+  title: 'Spring drop',
+  body: 'The new collection is live.',
+  status: 'draft',
+  tags: ['news']
+)
+
+# Changes the live article in place: only what you name is touched, and the
+# article is addressed by its own id, so this never leaves a duplicate behind.
+client.blogs.update_article(account_id, blogs.first.id, article.id, status: 'published')
+
+client.blogs.delete_article(account_id, blogs.first.id, article.id)
+
+products = client.blogs.list_products(account_id, status: 'active')
+client.blogs.update_product(account_id, products.first.id, title: 'Mug XL')
+```
+
 ## Inbox
 
 Comments, mentions and direct messages on connected accounts. Needs the `inbox` scope.

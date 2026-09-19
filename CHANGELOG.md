@@ -12,6 +12,11 @@ All notable changes to this gem are documented here. The format follows
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
 - `accounts.list_slack_channels`, `list_slack_members`, `get_slack_identity` and `update_slack_identity`
   (`accounts` scope), with the `SlackChannel`, `SlackMember` and `SlackIdentity` models.
+- `client.blogs` reaches content a connected site already owns, by the platform's own ids:
+  `list_blogs`, `list_articles`, `get_article`, `create_article`, `update_article`,
+  `delete_article`, plus `list_products` and `update_product` for a Shopify store, with the
+  `RemoteBlog`, `RemoteArticle` and `RemoteProduct` models. `update_article` changes the live
+  article in place and never creates a second post. Reads need `posts`; the writes need `publish`.
 
 ## [0.3.0] - 2026-09-19
 

@@ -88,6 +88,51 @@ module Fopost
   end
 
   # A channel the Slack app can post to; `is_current` marks the one this account posts to.
+  # A blog on a connected site. `id` is the platform's own id, never a FoPost
+  # one. Shopify reports every blog on the store; WordPress has one implicit
+  # blog and reports it under the id `default`, so both answer the same shape.
+  class RemoteBlog < Model
+    attribute :id
+    attribute :title
+    attribute :handle
+    attribute :url
+  end
+
+  # An article that already lives on a connected site.
+  class RemoteArticle < Model
+    attribute :id
+    attribute :blog_id
+    attribute :title
+    attribute :body_html
+    attribute :excerpt
+    # published, draft, pending or scheduled.
+    attribute :status
+    attribute :author_name
+    attribute :tags
+    attribute :image_url
+    attribute :url
+    attribute :published_at, :time
+    attribute :updated_at, :time
+  end
+
+  # A product on a connected store. `price` is the lowest variant price.
+  class RemoteProduct < Model
+    attribute :id
+    attribute :title
+    attribute :handle
+    # active, draft or archived.
+    attribute :status
+    attribute :description
+    attribute :vendor
+    attribute :product_type
+    attribute :tags
+    attribute :image_url
+    attribute :url
+    attribute :price
+    attribute :currency
+    attribute :updated_at, :time
+  end
+
   class SlackChannel < Model
     attribute :id
     attribute :name

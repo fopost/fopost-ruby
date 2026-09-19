@@ -87,6 +87,32 @@ module Fopost
     attribute :commands, [TelegramBotCommand]
   end
 
+  # A channel the Slack app can post to; `is_current` marks the one this account posts to.
+  class SlackChannel < Model
+    attribute :id
+    attribute :name
+    attribute :is_private
+    attribute :is_member
+    attribute :is_current
+  end
+
+  # A person in the connected Slack workspace; `id` is the handle for starting a DM.
+  class SlackMember < Model
+    attribute :id
+    attribute :name
+    attribute :real_name
+    attribute :display_name
+    attribute :avatar
+    attribute :is_bot
+  end
+
+  # The name and icon a Slack account posts under; nil means the app default.
+  class SlackIdentity < Model
+    attribute :username
+    attribute :icon_url
+    attribute :icon_emoji
+  end
+
   # A named set of connected accounts in one workspace.
   class AccountGroup < Model
     attribute :id

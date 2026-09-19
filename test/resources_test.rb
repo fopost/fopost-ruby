@@ -127,6 +127,48 @@ class ResourcesTest < Minitest::Test
     assert_empty client.accounts.delete_telegram_bot_commands('acc_1').commands
   end
 
+  def test_slack_channels_and_members
+    channel = { 'id' => 'C1', 'name' => 'general', 'is_private' => false, 'is_member' => true, 'is_current' => true }
+    member = { 'id' => 'U1', 'name' => 'sam', 'real_name' => 'Sam Rivera', 'display_name' => nil,
+               'avatar' => nil, 'is_bot' => false }
+    transport.stub(:get, '/accounts/acc_1/slack/channels', json: { 'data' => [channel] })
+    transport.stub(:get, '/accounts/acc_1/slack/members', json: { 'data' => [member] })
+
+    channels = client.accounts.list_slack_channels('acc_1')
+
+    assert_equal 'C1', channels[0].id
+    assert channels[0].is_current
+
+    members = client.accounts.list_slack_members('acc_1')
+
+    assert_equal 'U1', members[0].id
+    assert_nil members[0].display_name
+  end
+
+  def test_slack_identity_get_and_partial_update
+    identity = { 'data' => { 'username' => 'Launch Bot', 'icon_url' => nil, 'icon_emoji' => ':rocket:' } }
+    transport.stub(:get, '/accounts/acc_1/slack/identity', json: identity)
+    transport.stub(:patch, '/accounts/acc_1/slack/identity', json: identity)
+
+    assert_equal ':rocket:', client.accounts.get_slack_identity('acc_1').icon_emoji
+
+    updated = client.accounts.update_slack_identity('acc_1', username: 'Launch Bot', icon_url: nil)
+
+    assert_equal 'Launch Bot', updated.username
+    # Omitted keywords stay off the wire; nil is sent to clear.
+    assert_equal({ 'username' => 'Launch Bot', 'icon_url' => nil }, transport.last.json)
+  end
+
+  def test_slack_webhook_connection_raises_with_its_code
+    body = { 'error' => 'webhook_connection', 'message' => 'Reconnect' }
+    transport.stub(:get, '/accounts/acc_1/slack/channels', status: 409, json: body)
+
+    error = assert_raises(Fopost::Error) { client.accounts.list_slack_channels('acc_1') }
+
+    assert_equal 409, error.status
+    assert_equal 'webhook_connection', error.code
+  end
+
   def test_labels_list
     transport.stub(:get, '/labels', json: { 'data' => [LABEL_FIXTURE] })
 

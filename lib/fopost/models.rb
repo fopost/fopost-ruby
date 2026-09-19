@@ -781,4 +781,107 @@ module Fopost
     attribute :created_at, :time
     attribute :workspace_id
   end
+  # ─── Contacts ────────────────────────────────────────────────────
+
+  # One handle on one network. The handle is lower-cased with no leading @.
+  class ContactChannel < Model
+    attribute :platform
+    attribute :handle
+    # The platform's own id for this person, when the network gave us one.
+    attribute :external_id
+  end
+
+  class ContactLabel < Model
+    attribute :id
+    attribute :name
+    attribute :color
+  end
+
+  # One person, however many handles they write from.
+  class Contact < Model
+    attribute :id
+    attribute :display_name
+    attribute :channels, [ContactChannel]
+    # inbox, radar or import — what first created the row.
+    attribute :source
+    attribute :note
+    attribute :first_seen_at, :time
+    attribute :last_seen_at, :time
+    # Custom field values, keyed by field key.
+    attribute :fields, :hash
+    attribute :labels, [ContactLabel]
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One thread a contact appears in.
+  class ContactConversation < Model
+    # How the inbox groups it: DM thread id, else root post id, else handle.
+    attribute :key
+    attribute :account_id
+    attribute :account_username
+    attribute :platform
+    attribute :messages
+    attribute :received
+    attribute :sent
+    attribute :last_message_at, :time
+    attribute :last_item_id
+  end
+
+  class ContactImportSkip < Model
+    attribute :row
+    attribute :reason
+  end
+
+  # What a CSV import did.
+  class ContactImportResult < Model
+    attribute :created
+    # Rows that folded into a contact already on file.
+    attribute :merged
+    attribute :skipped, [ContactImportSkip]
+    # Columns that named neither a reserved field nor a custom field.
+    attribute :unknown_columns
+  end
+
+  # A column the workspace invented to keep about its contacts.
+  class ContactField < Model
+    attribute :id
+    # Lower-case key, also the CSV column header. Fixed once created.
+    attribute :key
+    attribute :name
+    # text, number, date, select or boolean.
+    attribute :type
+    # Allowed values when the type is select.
+    attribute :options
+    attribute :position
+  end
+
+  class ConversationAnalyticsRow < Model
+    attribute :key
+    attribute :account_id
+    attribute :platform
+    attribute :received
+    attribute :sent
+    attribute :answered
+    attribute :open
+    # Median minutes to the first reply in this thread.
+    attribute :median_response_minutes
+    attribute :first_message_at, :time
+    attribute :last_message_at, :time
+  end
+
+  # Inbox analytics broken out per thread.
+  class ConversationAnalytics < Model
+    attribute :conversations, [ConversationAnalyticsRow]
+    attribute :total
+    attribute :page
+    attribute :per_page
+  end
+
+  # The pagination block a contacts listing returns.
+  class ContactPageMeta < Model
+    attribute :page
+    attribute :per_page
+    attribute :total
+  end
 end

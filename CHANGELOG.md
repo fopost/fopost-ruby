@@ -8,6 +8,13 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `contacts` resource: the people behind the inbox. `list`, `get`, `create`, `update`,
+  `delete`, `conversations` (the threads one person appears in), `import` (CSV), and
+  `list_fields` / `create_field` / `update_field` / `delete_field` for the custom columns
+  a workspace keeps. All need the `inbox` scope.
+- `contacts.conversation_analytics` reads `/v1/analytics/inbox/conversations`: volume and
+  median reply time per thread. Needs the `analytics` scope.
+
 - `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
 - `accounts.list_slack_channels`, `list_slack_members`, `get_slack_identity` and `update_slack_identity`

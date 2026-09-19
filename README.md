@@ -246,6 +246,50 @@ client.inbox.start_conversation(comment_id: item.id, text: 'Sent you the details
 client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
 ```
 
+## Contacts
+
+The people behind the inbox. A contact is one human however many handles they write from: an inbound item files its author, a reply files whoever you answered, and both fold into whatever is already on file. Needs the `inbox` scope.
+
+```ruby
+page = client.contacts.list(workspace_id: workspace_id, search: 'ada')
+page.each { |contact| puts "#{contact.display_name} — #{contact.channels.size} handles" }
+puts page.meta.total
+
+contact = client.contacts.get(contact_id)
+
+# Folds into whoever already holds the first channel, so this cannot duplicate someone.
+contact = client.contacts.create(
+  workspace_id: workspace_id,
+  channels: [{ 'platform' => 'x', 'handle' => 'ada_writes' }],
+  display_name: 'Ada Okafor',
+  fields: { 'plan_tier' => 'Pro' }
+)
+
+client.contacts.update(contact.id, fields: { 'region' => nil })  # nil clears a field
+client.contacts.delete(contact.id)                               # the messages stay
+
+# The threads this person appears in, newest first.
+client.contacts.conversations(contact.id).each do |thread|
+  puts "#{thread.platform} #{thread.messages} messages, #{thread.received} in"
+end
+
+# platform and handle are required columns; any other column is a custom field key.
+result = client.contacts.import(workspace_id: workspace_id, csv: "platform,handle\nx,ada_writes")
+puts "#{result.created} created, #{result.merged} merged"
+puts result.unknown_columns.inspect
+
+# The columns your workspace keeps.
+fields = client.contacts.list_fields(workspace_id)
+field = client.contacts.create_field(workspace_id: workspace_id, key: 'plan_tier',
+                                     name: 'Plan Tier', type: 'select', options: %w[Free Pro])
+client.contacts.update_field(field.id, name: 'Tier')
+client.contacts.delete_field(field.id)   # removes every answer to it
+
+# Volume and median reply time per thread. Needs the `analytics` scope.
+report = client.contacts.conversation_analytics(days: 30, sort: 'slowest')
+puts report.conversations.first.median_response_minutes
+```
+
 ## Ads
 
 Meta ads, campaigns, creatives, audiences, insights and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.

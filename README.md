@@ -152,6 +152,59 @@ repurposed = client.ai.repurpose_url(
 
 > **API keys reach `credits` and `generate_caption`.** `rewrite` and `repurpose_url` currently require a signed-in dashboard session and answer `401` to an API key. They are here so the surface is complete once the server opens them up.
 
+## Inbox
+
+Comments, mentions and direct messages on connected accounts. Needs the `inbox` scope.
+
+```ruby
+page = client.inbox.list(workspace_id: workspace.id, state: 'unread', sort: 'unanswered')
+page.each { |item| puts "#{item.platform} #{item.author_handle}: #{item.text}" }
+
+client.inbox.threads(workspace_id: workspace.id)         # one row per post with comments
+client.inbox.conversations(workspace_id: workspace.id)   # one row per DM thread
+client.inbox.unread_count(workspace_id: workspace.id)
+
+client.inbox.reply(item.id, text: 'Thanks!')
+client.inbox.update(item.id, state: 'snoozed', snoozed_until: Time.utc(2026, 9, 20, 9))
+client.inbox.hide(item.id)
+client.inbox.mark_thread_read(workspace_id: workspace.id, account_id: item.account.id,
+                              post_external_id: item.post_external_id)
+client.inbox.refresh(workspace_id: workspace.id)
+
+client.inbox.approvals(workspace_id: workspace.id).each { |a| client.inbox.approve_reply(a.id) }
+```
+
+## Ads
+
+Meta ads, audiences and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status` and `delete` spend money and also need `publish`. A boost or ad starts paused unless you pass `paused: false`.
+
+```ruby
+url = client.ads.authorize_meta(workspace_id: workspace.id)   # finish the Meta login in a browser
+source = client.ads.sources(workspace_id: workspace.id).first
+
+ad = client.ads.boost(
+  workspace_id: workspace.id,
+  connection_id: source.connection_id,
+  ad_account_id: source.ad_accounts.first['id'],
+  post_id: post.id,
+  account_id: accounts.first.id,
+  name: 'Launch boost',
+  goal: 'engagement',
+  budget: { minor: 5000, type: 'daily' },
+  targeting: { countries: ['US'] }
+)
+
+client.ads.set_status(ad.id, workspace_id: workspace.id, status: 'active')
+client.ads.refresh(ad.id, workspace_id: workspace.id).insights.impressions
+client.ads.list(workspace_id: workspace.id)
+client.ads.external(workspace_id: workspace.id)   # ads made outside FoPost, read live
+
+client.ads.audiences(connection_id: source.connection_id, ad_account_id: 'act_123')
+client.ads.search_targeting(connection_id: source.connection_id, type: 'interest', q: 'coffee')
+client.ads.lead_forms(workspace_id: workspace.id)
+client.ads.leads('form_1', connection_id: source.connection_id, page_id: '42')
+```
+
 ## Errors
 
 Every non-2xx response raises. All of them are rescuable as `Fopost::Error`.

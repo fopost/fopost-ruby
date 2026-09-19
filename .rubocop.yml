@@ -20,6 +20,7 @@ Style/Documentation:
 # The SDK mirrors the API's own parameter names, which run long by design.
 Naming/MethodParameterName:
   MinNameLength: 2
+  AllowedNames: [at, by, cc, db, id, if, in, io, ip, of, on, os, pp, to, q]
 
 # `is_primary` mirrors the API field name.
 Naming/PredicatePrefix:

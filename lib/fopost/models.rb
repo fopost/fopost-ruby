@@ -205,4 +205,281 @@ module Fopost
     attribute :posts, :hash
     attribute :credits, AiCredits
   end
+
+  # `page`, `per_page`, `total` on the inbox list endpoints.
+  class InboxPageMeta < Model
+    attribute :page
+    attribute :per_page
+    attribute :total
+  end
+
+  class InboxAccountRef < Model
+    attribute :id
+    attribute :platform
+    attribute :username
+    attribute :name
+    attribute :avatar
+  end
+
+  class InboxAttachment < Model
+    attribute :kind
+    attribute :name
+    attribute :width
+    attribute :height
+    attribute :link
+    attribute :url
+    attribute :preview_url
+  end
+
+  # The platform post an item sits under, whoever published it.
+  class InboxPostContext < Model
+    attribute :external_id
+    attribute :is_own
+    attribute :text
+    attribute :author_name
+    attribute :author_handle
+    attribute :author_avatar_url
+    attribute :thumbnail_url
+    attribute :permalink
+    attribute :published_at, :time
+    attribute :published, :hash
+  end
+
+  # A comment, mention or direct message on a connected account.
+  class InboxItem < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :platform
+    attribute :type
+    attribute :state
+    attribute :direction
+    attribute :conversation_id
+    attribute :author_name
+    attribute :author_handle
+    attribute :author_avatar_url
+    attribute :text
+    attribute :attachments, [InboxAttachment]
+    attribute :permalink
+    attribute :post_external_id
+    attribute :parent_external_id
+    attribute :platform_created_at, :time
+    attribute :snoozed_until, :time
+    attribute :replied_at, :time
+    attribute :created_at, :time
+    attribute :can_reply
+    attribute :hidden
+    attribute :can_hide
+    attribute :can_delete
+    attribute :post, :hash
+    attribute :post_context, InboxPostContext
+    attribute :account, InboxAccountRef
+  end
+
+  # One platform post and the comments it has collected.
+  class InboxThread < Model
+    attribute :workspace_id
+    attribute :account_id
+    attribute :post_external_id
+    attribute :comment_count
+    attribute :unread_count
+    attribute :last_comment_at, :time
+    attribute :last_comment_text
+    attribute :last_comment_author
+    attribute :post, InboxPostContext
+    attribute :account, InboxAccountRef
+  end
+
+  # One direct-message thread.
+  class InboxConversation < Model
+    attribute :workspace_id
+    attribute :account_id
+    attribute :conversation_id
+    attribute :message_count
+    attribute :unread_count
+    attribute :last_message_at, :time
+    attribute :last_message_text
+    attribute :last_message_outbound
+    attribute :participant, :hash
+    attribute :account, InboxAccountRef
+  end
+
+  class InboxAccount < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :platform
+    attribute :username
+    attribute :name
+    attribute :avatar
+    attribute :inbox_supported
+    attribute :pending_reason
+    attribute :dm_supported
+    attribute :dm_pending_reason
+  end
+
+  class InboxPlatform < Model
+    attribute :platform
+    attribute :comments
+    attribute :dms
+  end
+
+  # A drafted reply a person still has to send.
+  class InboxApproval < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :source
+    attribute :reply
+    attribute :created_at, :time
+    attribute :item, :hash
+  end
+
+  class InboxReplyResult < Model
+    attribute :item, InboxItem
+    attribute :reply, :hash
+  end
+
+  class InboxRefreshResult < Model
+    attribute :accounts_polled
+    attribute :new_items
+    attribute :rate_limited
+    attribute :dm_reconnect
+  end
+
+  # Lifetime numbers from the last refresh. `spend_minor` is in the ad
+  # account currency, minor units.
+  class AdInsights < Model
+    attribute :impressions
+    attribute :reach
+    attribute :clicks
+    attribute :spend_minor
+  end
+
+  # A boost or standalone ad created through FoPost.
+  class Ad < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :kind
+    attribute :name
+    attribute :goal
+    attribute :status
+    attribute :effective_status
+    attribute :connection_id
+    attribute :account_id
+    attribute :platform
+    attribute :ad_account_id
+    attribute :source_post_id
+    attribute :budget_minor
+    attribute :budget_type
+    attribute :currency
+    attribute :end_at, :time
+    attribute :targeting, :hash
+    attribute :creative, :hash
+    attribute :insights, AdInsights
+    attribute :insights_at, :time
+    attribute :last_error
+    attribute :created_at, :time
+  end
+
+  # An ad on a connected ad account that was made outside FoPost.
+  class ExternalAd < Model
+    attribute :id
+    attribute :name
+    attribute :effective_status
+    attribute :campaign_id
+    attribute :campaign_name
+    attribute :objective
+    attribute :budget_minor
+    attribute :budget_type
+    attribute :end_at, :time
+    attribute :created_at, :time
+    attribute :connection_id
+    attribute :ad_account_id
+    attribute :currency
+    attribute :workspace_id
+  end
+
+  class AdConnection < Model
+    attribute :id
+    attribute :provider
+    attribute :auth_type
+    attribute :name
+    attribute :business_id
+    attribute :created_at, :time
+    attribute :workspace_id
+  end
+
+  # A connection with the ad accounts and Pages its grant reaches.
+  class AdSource < Model
+    attribute :connection_id
+    attribute :name
+    attribute :workspace_id
+    attribute :ad_accounts
+    attribute :pages
+    attribute :error
+  end
+
+  class BoostablePost < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :text
+    attribute :thumbnail_url
+    attribute :deliveries
+  end
+
+  class Audience < Model
+    attribute :id
+    attribute :name
+    attribute :subtype
+    attribute :description
+    attribute :size_lower
+    attribute :size_upper
+    attribute :delivery_status
+    attribute :created_at
+  end
+
+  class AudiencesResult < Model
+    attribute :audiences, [Audience]
+    attribute :pixels
+    attribute :workspace_id
+  end
+
+  class TargetingOption < Model
+    attribute :id
+    attribute :name
+    attribute :detail
+  end
+
+  class LeadForm < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :leads_count
+    attribute :created_at
+    attribute :questions
+  end
+
+  class LeadFormSource < Model
+    attribute :connection_id
+    attribute :connection_name
+    attribute :page_id
+    attribute :page_name
+    attribute :forms, [LeadForm]
+    attribute :error
+    attribute :workspace_id
+  end
+
+  class Lead < Model
+    attribute :id
+    attribute :created_at
+    attribute :fields
+    attribute :ad_name
+    attribute :campaign_name
+    attribute :platform
+    attribute :is_organic
+  end
+
+  # One page of leads; pass `next_cursor` back as `after:` for the next.
+  class LeadsPage < Model
+    attribute :leads, [Lead]
+    attribute :next_cursor
+  end
 end

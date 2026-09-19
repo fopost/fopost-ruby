@@ -75,7 +75,7 @@ calls `unwrap` and hands the hash to a model.
 
 **Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`, `validate`, `media`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
-`#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move` plus the Telegram connect-code and bot-commands methods. `inbox` (scope `inbox`) covers the
+`#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move` plus the Telegram connect-code and bot-commands methods and the Slack channels, members and identity methods. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, reply, hide, delete, like, pin, react, edit,
 start-conversation, typing and approval endpoints (like, pin, react, edit, start-conversation
 and typing also need `publish`) but not

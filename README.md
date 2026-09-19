@@ -136,6 +136,16 @@ client.accounts.get_telegram_bot_commands(account_id)
 client.accounts.delete_telegram_bot_commands(account_id)
 ```
 
+Read a Slack account's channels and members, and set the name and icon it posts under. A member's `id` is the
+handle for `inbox.start_conversation`:
+
+```ruby
+client.accounts.list_slack_channels(account_id)
+client.accounts.list_slack_members(account_id)
+client.accounts.get_slack_identity(account_id)
+client.accounts.update_slack_identity(account_id, username: 'Launch Bot', icon_emoji: ':rocket:')   # nil clears
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.

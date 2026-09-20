@@ -505,6 +505,26 @@ page = client.ads.leads_feed(workspace_id: workspace.id, cursor: page.next_curso
 | Partnership ads | `partnership_creators`, `request_partnership`, `revoke_partnership` |
 | Account settings | `account_activity`, `labels`, `create_label`, `update_label`, `delete_label`, `apply_label`, `studies`, `create_study`, `study`, `delete_study`, `ios_campaign_limits`, `high_demand_periods`, `create_high_demand_period`, `delete_high_demand_period`, `value_rule_sets`, `create_value_rule_set`, `delete_value_rule_set` |
 
+## Google Business Profile
+
+Manage a connected Business Profile location: the profile, attributes, food menus, services, photos, action links, verification and performance.
+
+```ruby
+location = client.google_business.get_location('acc_1')
+client.google_business.update_location('acc_1', title: 'Corner Bakery', website_uri: 'https://yourbrand.com')
+
+# Photos come from your media library, JPEG or PNG.
+client.google_business.add_media('acc_1', media_id: media_id, category: 'INTERIOR')
+
+client.google_business.create_place_action('acc_1', uri: 'https://yourbrand.com/book',
+                                                    place_action_type: 'APPOINTMENT')
+
+metrics = client.google_business.get_performance('acc_1', start_date: '2026-09-01', end_date: '2026-09-30')
+terms = client.google_business.get_search_keywords('acc_1', start_date: '2026-08-01', end_date: '2026-09-01')
+```
+
+Responses relay Google's own shape as plain hashes. Reads need the `accounts` scope, writes `publish` as well. Every call raises a 503 `configuration_error` until Google grants the deployment Business Profile API access.
+
 ## Media
 
 Direct uploads to the media library, in three steps: presign a slot, PUT the bytes to the returned URL with the returned headers (no API key), then complete. `upload_direct` does all three and returns the media item; a rejected PUT raises before `complete` is called.

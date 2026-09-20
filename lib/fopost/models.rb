@@ -376,7 +376,7 @@ module Fopost
     attribute :published, :hash
   end
 
-  # A comment, mention or direct message on a connected account.
+  # A comment, mention, review or direct message on a connected account.
   class InboxItem < Model
     attribute :id
     attribute :workspace_id
@@ -389,6 +389,8 @@ module Fopost
     attribute :author_handle
     attribute :author_avatar_url
     attribute :text
+    # Stars on a review, 1-5. Nil on every other type.
+    attribute :rating
     attribute :attachments, [InboxAttachment]
     attribute :permalink
     attribute :post_external_id
@@ -427,6 +429,8 @@ module Fopost
     attribute :last_comment_at, :time
     attribute :last_comment_text
     attribute :last_comment_author
+    # Stars, on a review thread. Nil on comments and mentions.
+    attribute :rating
     attribute :post, InboxPostContext
     attribute :account, InboxAccountRef
   end

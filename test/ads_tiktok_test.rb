@@ -45,7 +45,7 @@ class AdsTikTokTest < Minitest::Test
     client.ads.create_campaign(workspace_id: 'ws_1', connection_id: 'conn_1', ad_account_id: '7011',
                                name: 'Smart', goal: 'traffic', smart_plus: true)
 
-    assert_equal true, transport.last.json['smartPlus']
+    assert transport.last.json['smartPlus']
   end
 
   def test_conversions_report_what_the_network_accepted
@@ -73,7 +73,7 @@ class AdsTikTokTest < Minitest::Test
     page = client.ads.comments(workspace_id: 'ws_1', connection_id: 'conn_1', ad_id: 'ad_1')
 
     assert_equal '2', page.next_cursor
-    assert_equal true, page.comments[0].hidden
+    assert page.comments[0].hidden
     assert_equal 3, page.comments[0].likes
 
     scope = { workspace_id: 'ws_1', connection_id: 'conn_1', ad_id: 'ad_1' }
@@ -83,7 +83,7 @@ class AdsTikTokTest < Minitest::Test
 
     client.ads.set_comment_hidden('cm_1', hidden: true, **scope)
 
-    assert_equal true, transport.last.json['hidden']
+    assert transport.last.json['hidden']
 
     client.ads.delete_comment('cm_1', **scope)
     # The ad travels in the body, because the path already carries the comment.

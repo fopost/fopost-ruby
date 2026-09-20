@@ -113,6 +113,87 @@ module Fopost
     attribute :icon_emoji
   end
 
+  # A Discord text channel the bot can post to; `is_current` marks this account's.
+  class DiscordChannel < Model
+    attribute :id
+    attribute :name
+    # Discord's channel type: 0 text, 5 announcement, 15 forum.
+    attribute :type
+    attribute :parent_id
+    attribute :nsfw
+    attribute :is_current
+  end
+
+  # The nickname and avatar the bot wears in the server; nil means its own.
+  class DiscordIdentity < Model
+    attribute :username
+    attribute :avatar_url
+  end
+
+  # A message in the connected channel.
+  class DiscordMessage < Model
+    attribute :id
+    attribute :channel_id
+    attribute :content
+    attribute :author_id
+    attribute :author_name
+    attribute :pinned
+    attribute :created_at
+  end
+
+  # A message the bot put somewhere.
+  class DiscordMessageRef < Model
+    attribute :id
+    attribute :channel_id
+  end
+
+  # A thread started on a message.
+  class DiscordThread < Model
+    attribute :id
+    attribute :name
+    attribute :parent_id
+  end
+
+  # An event on the server's calendar; `channel_id` is a voice or stage channel,
+  # otherwise `location` says where it happens.
+  class DiscordScheduledEvent < Model
+    attribute :id
+    attribute :name
+    attribute :description
+    attribute :channel_id
+    attribute :location
+    attribute :start_time
+    attribute :end_time
+    # One of scheduled, active, completed, canceled.
+    attribute :status
+    attribute :user_count
+  end
+
+  # A person in the connected server; `id` is the member id for a DM or a role.
+  class DiscordMember < Model
+    attribute :id
+    attribute :username
+    attribute :display_name
+    attribute :nick
+    attribute :avatar
+    attribute :is_bot
+    attribute :roles
+    attribute :joined_at
+  end
+
+  # A role in the connected server; `permissions` is Discord's bitfield as a decimal string.
+  class DiscordRole < Model
+    attribute :id
+    attribute :name
+    attribute :color
+    attribute :hoist
+    attribute :mentionable
+    # A managed role belongs to an integration and cannot be edited.
+    attribute :managed
+    attribute :position
+    attribute :permissions
+  end
+
   # A named set of connected accounts in one workspace.
   class AccountGroup < Model
     attribute :id

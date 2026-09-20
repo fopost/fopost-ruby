@@ -146,6 +146,24 @@ client.accounts.get_slack_identity(account_id)
 client.accounts.update_slack_identity(account_id, username: 'Launch Bot', icon_emoji: ':rocket:')   # nil clears
 ```
 
+On a Discord bot connection, read and change the channel it posts to and manage the server itself:
+
+```ruby
+client.accounts.list_discord_channels(account_id)
+client.accounts.switch_discord_channel(account_id, 'c2')
+client.accounts.update_discord_identity(account_id, username: 'Release Bot')       # nil clears
+
+client.accounts.create_discord_event(account_id, name: 'Launch stream',
+                                                 start_time: '2026-10-01T18:00:00Z',
+                                                 end_time: '2026-10-01T19:00:00Z',
+                                                 location: 'https://yourbrand.com/live')
+
+members = client.accounts.list_discord_members(account_id, query: 'ada')
+role = client.accounts.create_discord_role(account_id, name: 'Beta')
+client.accounts.add_discord_member_role(account_id, role.id, members[0].id)
+client.accounts.send_discord_dm(account_id, members[0].id, 'Welcome aboard')
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.

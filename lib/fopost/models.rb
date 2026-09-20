@@ -884,4 +884,93 @@ module Fopost
     attribute :per_page
     attribute :total
   end
+
+  # ─── Broadcasts and sequences ────────────────────────────────────
+
+  # What became of a broadcast's recipients, by status.
+  class BroadcastCounts < Model
+    attribute :total
+    attribute :sent
+    # Usually the messaging window doing its job.
+    attribute :skipped
+    attribute :failed
+    attribute :pending
+  end
+
+  # One message, sent into conversations the workspace already has.
+  class Broadcast < Model
+    attribute :id
+    # Internal only; never sent to anyone.
+    attribute :name
+    attribute :text
+    attribute :account_id
+    attribute :audience, :hash
+    # draft, scheduled, sending, sent or cancelled.
+    attribute :status
+    attribute :scheduled_at, :time
+    attribute :sent_at, :time
+    attribute :created_at, :time
+    attribute :counts, BroadcastCounts
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One contact on one broadcast, and what became of their message.
+  class BroadcastRecipient < Model
+    attribute :contact_id
+    attribute :display_name
+    # pending, sent, skipped or failed.
+    attribute :status
+    # Why nothing was sent: window_closed, no_conversation or
+    # unsupported_platform. window_closed means the network's messaging
+    # window had shut, so nothing was attempted.
+    attribute :skip_reason
+    attribute :sent_at, :time
+    attribute :error
+  end
+
+  # One message and how long after the previous step it goes out.
+  class SequenceStep < Model
+    attribute :delay_hours
+    attribute :text
+    attribute :media_id
+  end
+
+  # Where a sequence's enrollments stand, by status.
+  class SequenceEnrollmentCounts < Model
+    attribute :total
+    attribute :active
+    attribute :completed
+    attribute :stopped
+    attribute :failed
+  end
+
+  # A series of messages, each a delay after the one before.
+  class Sequence < Model
+    attribute :id
+    attribute :name
+    attribute :account_id
+    attribute :steps, [SequenceStep]
+    # active or paused. A paused sequence fires nothing.
+    attribute :status
+    attribute :created_at, :time
+    attribute :enrollments, SequenceEnrollmentCounts
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One contact walking one sequence.
+  class Enrollment < Model
+    attribute :id
+    attribute :contact_id
+    attribute :display_name
+    # Steps already sent, so also the index of the next one.
+    attribute :step
+    attribute :next_at, :time
+    # active, completed, stopped or failed.
+    attribute :status
+    attribute :last_sent_at, :time
+    # On a skipped step, the reason it was skipped.
+    attribute :error
+  end
 end

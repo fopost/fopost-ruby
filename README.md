@@ -290,6 +290,61 @@ report = client.contacts.conversation_analytics(days: 30, sort: 'slowest')
 puts report.conversations.first.median_response_minutes
 ```
 
+## Broadcasts
+
+One message into every conversation you already have with a segment of your contacts. Nothing is sent into a closed messaging window: Messenger and Instagram take a business-initiated message only within 24 hours of the contact's last one, so recipients outside it come back skipped with `window_closed` rather than attempted. Telegram, Slack, Bluesky and Reddit have no window.
+
+Reading needs the `inbox` scope; `send` and `cancel` also need `publish`.
+
+```ruby
+page = client.broadcasts.list(workspace_id: workspace_id, status: 'sent')
+page.each { |b| puts "#{b.name} — #{b.counts.sent} sent, #{b.counts.skipped} skipped" }
+
+broadcast = client.broadcasts.create(
+  workspace_id: workspace_id,
+  account_id: account_id,
+  name: 'September check-in',
+  text: 'New colours just landed. Want a look?',
+  audience: { 'platforms' => ['instagram'] }
+)
+
+# The recipients count is how many contacts matched, not how many will be
+# messaged — the messaging window decides that.
+client.broadcasts.send(broadcast.id)
+
+# Who was skipped, and why.
+client.broadcasts.recipients(broadcast.id, status: 'skipped').each do |r|
+  puts "#{r.display_name}: #{r.skip_reason}"
+end
+```
+
+## Sequences
+
+A series of messages, each a delay after the one before, walked per enrolled contact. The messaging window applies to every step: one that comes due outside it is skipped rather than sent, and the enrollment carries on.
+
+```ruby
+sequence = client.sequences.create(
+  workspace_id: workspace_id,
+  account_id: account_id,
+  name: 'Welcome',
+  steps: [
+    { 'delay_hours' => 0, 'text' => 'Thanks for the follow — anything I can help with?' },
+    { 'delay_hours' => 48, 'text' => 'Here is what people usually ask us first.' }
+  ]
+)
+
+# By id, or by the same audience filter a broadcast takes.
+client.sequences.enroll(sequence.id, contact_ids: [contact_id])
+client.sequences.enroll(sequence.id, audience: { 'platforms' => ['telegram'] })
+
+# Nothing further fires for them.
+client.sequences.unenroll(sequence.id, [contact_id])
+
+client.sequences.enrollments(sequence.id).each do |e|
+  puts "#{e.display_name} — step #{e.step}, #{e.status}"
+end
+```
+
 ## Ads
 
 Meta ads, campaigns, creatives, audiences, insights and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.

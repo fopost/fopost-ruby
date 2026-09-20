@@ -2,7 +2,9 @@
 
 module Fopost
   module Resources
-    # `client.ads` — ads, audiences and lead forms across the ad networks.
+    # `client.ads` — ads, catalogs, audiences, the ad archive and lead forms.
+    #
+    # Meta is what this resource covers; the Google-only surface is `client.ads.google`.
     #
     # Every method needs the `ads` scope. {#boost}, {#create}, {#set_status}
     # and {#delete} spend money and also need `publish`, as do the create,
@@ -473,7 +475,360 @@ module Fopost
         delete_object("/ads/lead-pages/#{page_id}", workspace_id, connection_id)
       end
 
+      # ─── Goals ──────────────────────────────────────────────────
+
+      # The goals this connection's network can run right now. Ask rather than
+      # assume: a goal the deployment is not set up for is absent here and is
+      # refused if you send it anyway.
+      def goals(connection_id:, workspace_id: nil)
+        result = unwrap(http.get('/ads/goals', meta_query(workspace_id, connection_id)))
+        result.is_a?(Array) ? result.map(&:to_s) : []
+      end
+
+      # ─── Product catalogs ───────────────────────────────────────
+
+      # Catalogs the connection's business portfolios reach. Read live, never stored.
+      def catalogs(connection_id:, workspace_id: nil)
+        ProductCatalogsResult.from(unwrap(http.get('/ads/catalogs', meta_query(workspace_id, connection_id))))
+      end
+
+      # Created on the connection's business portfolio. Also needs `publish`.
+      def create_catalog(workspace_id:, connection_id:, name:, vertical: nil)
+        body = compact_nil(
+          'workspaceId' => workspace_id, 'connectionId' => connection_id,
+          'name' => name, 'vertical' => vertical
+        )
+        ProductCatalog.from(unwrap(http.post('/ads/catalogs', body)))
+      end
+
+      def catalog(catalog_id, connection_id:, workspace_id: nil)
+        ProductCatalog.from(
+          unwrap(http.get("/ads/catalogs/#{catalog_id}", meta_query(workspace_id, connection_id)))
+        )
+      end
+
+      # Also needs `publish`.
+      def update_catalog(catalog_id, workspace_id:, connection_id:, name:)
+        ProductCatalog.from(patch_object(
+                              "/ads/catalogs/#{catalog_id}", workspace_id, connection_id,
+                              'workspaceId' => workspace_id, 'connectionId' => connection_id, 'name' => name
+                            ))
+      end
+
+      # Deletes every product, feed and set in it. Also needs `publish`.
+      def delete_catalog(catalog_id, workspace_id:, connection_id:)
+        delete_object("/ads/catalogs/#{catalog_id}", workspace_id, connection_id)
+      end
+
+      # One page of products; pass `next_cursor` back as `after`.
+      def catalog_products(catalog_id, connection_id:, workspace_id: nil, after: nil)
+        query = meta_query(workspace_id, connection_id).merge('after' => after)
+        CatalogProductsPage.from(unwrap(http.get("/ads/catalogs/#{catalog_id}/products", query)))
+      end
+
+      # Up to 500 upserts and deletes in one batch, keyed by your own `retailerId`.
+      # Also needs `publish`.
+      def write_catalog_products(catalog_id, workspace_id:, connection_id:, products:)
+        body = {
+          'workspaceId' => workspace_id, 'connectionId' => connection_id,
+          'products' => products.map { |p| stringify(p) }
+        }
+        CatalogBatchResult.from(unwrap(http.post("/ads/catalogs/#{catalog_id}/products", body)))
+      end
+
+      def product_feeds(catalog_id, connection_id:, workspace_id: nil)
+        parse_list(
+          ProductFeed,
+          unwrap(http.get("/ads/catalogs/#{catalog_id}/feeds", meta_query(workspace_id, connection_id)))
+        )
+      end
+
+      # `schedule` is "HOURLY", "DAILY" or "WEEKLY" and needs `url`. Also needs `publish`.
+      def create_product_feed(catalog_id, workspace_id:, connection_id:, name:, url: nil, schedule: nil)
+        body = compact_nil(
+          'workspaceId' => workspace_id, 'connectionId' => connection_id,
+          'name' => name, 'url' => url, 'schedule' => schedule
+        )
+        ProductFeed.from(unwrap(http.post("/ads/catalogs/#{catalog_id}/feeds", body)))
+      end
+
+      # Also needs `publish`.
+      def delete_product_feed(catalog_id, feed_id, workspace_id:, connection_id:)
+        delete_object("/ads/catalogs/#{catalog_id}/feeds/#{feed_id}", workspace_id, connection_id)
+      end
+
+      # Each run the network made of the feed.
+      def feed_uploads(catalog_id, feed_id, connection_id:, workspace_id: nil)
+        path = "/ads/catalogs/#{catalog_id}/feeds/#{feed_id}/uploads"
+        parse_list(ProductFeedUpload, unwrap(http.get(path, meta_query(workspace_id, connection_id))))
+      end
+
+      # Fetches the feed now; the id of the run. Also needs `publish`.
+      def start_feed_upload(catalog_id, feed_id, workspace_id:, connection_id:, url: nil)
+        body = compact_nil('workspaceId' => workspace_id, 'connectionId' => connection_id, 'url' => url)
+        result = unwrap(http.post("/ads/catalogs/#{catalog_id}/feeds/#{feed_id}/uploads", body))
+        id = result.is_a?(Hash) ? result['id'] : nil
+        id.nil? ? '' : id.to_s
+      end
+
+      # A catalog ad runs from a product set, not the whole catalog.
+      def product_sets(catalog_id, connection_id:, workspace_id: nil)
+        parse_list(ProductSet, unwrap(http.get(
+                                        "/ads/catalogs/#{catalog_id}/product-sets", meta_query(workspace_id,
+                                                                                               connection_id)
+                                      )))
+      end
+
+      # Without a `filter` the set is the whole catalog. Also needs `publish`.
+      def create_product_set(catalog_id, workspace_id:, connection_id:, name:, filter: nil)
+        body = compact_nil(
+          'workspaceId' => workspace_id, 'connectionId' => connection_id,
+          'name' => name, 'filter' => filter.nil? ? nil : stringify(filter)
+        )
+        ProductSet.from(unwrap(http.post("/ads/catalogs/#{catalog_id}/product-sets", body)))
+      end
+
+      # Also needs `publish`.
+      def update_product_set(catalog_id, set_id, workspace_id:, connection_id:, name:, filter: nil)
+        ProductSet.from(patch_object(
+                          "/ads/catalogs/#{catalog_id}/product-sets/#{set_id}", workspace_id, connection_id,
+                          'workspaceId' => workspace_id, 'connectionId' => connection_id,
+                          'name' => name, 'filter' => filter.nil? ? nil : stringify(filter)
+                        ))
+      end
+
+      # Also needs `publish`.
+      def delete_product_set(catalog_id, set_id, workspace_id:, connection_id:)
+        delete_object("/ads/catalogs/#{catalog_id}/product-sets/#{set_id}", workspace_id, connection_id)
+      end
+
+      # ─── Reach and frequency ────────────────────────────────────
+
+      def reach_frequency(connection_id:, ad_account_id:, workspace_id: nil)
+        query = account_query(workspace_id, connection_id, ad_account_id)
+        ReachFrequencyResult.from(unwrap(http.get('/ads/reach-frequency', query)))
+      end
+
+      # Prices a flight. Nothing is bought until you reserve it.
+      def create_reach_frequency(workspace_id:, connection_id:, ad_account_id:, name:, targeting:,
+                                 placements:, budget_minor:, start_at:, end_at:, frequency_cap: nil)
+        body = compact_nil(
+          'workspaceId' => workspace_id, 'connectionId' => connection_id, 'adAccountId' => ad_account_id,
+          'name' => name, 'targeting' => stringify(targeting), 'placements' => placements.map(&:to_s),
+          'budgetMinor' => budget_minor, 'startAt' => start_at.to_s, 'endAt' => end_at.to_s,
+          'frequencyCap' => frequency_cap
+        )
+        ReachFrequencyPrediction.from(unwrap(http.post('/ads/reach-frequency', body)))
+      end
+
+      def reach_frequency_prediction(prediction_id, connection_id:, ad_account_id:, workspace_id: nil)
+        query = account_query(workspace_id, connection_id, ad_account_id)
+        ReachFrequencyPrediction.from(unwrap(http.get("/ads/reach-frequency/#{prediction_id}", query)))
+      end
+
+      # Holds the inventory the prediction priced. Also needs `publish`.
+      def reserve_reach_frequency(prediction_id, workspace_id:, connection_id:, ad_account_id:)
+        reach_frequency_action(prediction_id, 'reserve', workspace_id, connection_id, ad_account_id)
+      end
+
+      # Also needs `publish`.
+      def cancel_reach_frequency(prediction_id, workspace_id:, connection_id:, ad_account_id:)
+        reach_frequency_action(prediction_id, 'cancel', workspace_id, connection_id, ad_account_id)
+      end
+
+      # ─── Ad Library ─────────────────────────────────────────────
+
+      # The public ad archive: ads anyone is running, by keyword or by Page. Read
+      # live on every call and stored nowhere, so an ad that stops running is
+      # simply absent from the next search.
+      def library(connection_id:, countries:, workspace_id: nil, q: nil, page_ids: nil,
+                  active_status: nil, limit: nil, after: nil)
+        query = meta_query(workspace_id, connection_id).merge(
+          'countries' => Array(countries).join(','),
+          'q' => q,
+          'page_ids' => page_ids.nil? ? nil : Array(page_ids).join(','),
+          'active_status' => active_status,
+          'limit' => limit&.to_s,
+          'after' => after
+        )
+        AdLibraryPage.from(unwrap(http.get('/ads/library', query)))
+      end
+
+      # ─── Partnership ads ────────────────────────────────────────
+
+      # Creators who allowlisted this Page to run partnership ads on their posts.
+      def partnership_creators(connection_id:, page_id:, workspace_id: nil)
+        query = meta_query(workspace_id, connection_id).merge('page_id' => page_id)
+        parse_list(PartnershipCreator, unwrap(http.get('/ads/partnership/creators', query)))
+      end
+
+      # Asks a creator for permission; the list as it now stands.
+      def request_partnership(workspace_id:, connection_id:, page_id:, creator_id:)
+        body = {
+          'workspaceId' => workspace_id, 'connectionId' => connection_id,
+          'pageId' => page_id, 'creatorId' => creator_id
+        }
+        parse_list(PartnershipCreator, unwrap(http.post('/ads/partnership/creators', body)))
+      end
+
+      def revoke_partnership(creator_id, workspace_id:, connection_id:, page_id:)
+        query = meta_query(workspace_id, connection_id).merge('page_id' => page_id)
+        http.request(:delete, "/ads/partnership/creators/#{creator_id}", params: query)
+        nil
+      end
+
+      # ─── Ad account settings ────────────────────────────────────
+
+      # Who changed what on the ad account, and when. Dates are "YYYY-MM-DD".
+      def account_activity(connection_id:, ad_account_id:, workspace_id: nil, since: nil, until_date: nil)
+        query = account_query(workspace_id, connection_id, ad_account_id)
+                .merge('since' => since&.to_s, 'until' => until_date&.to_s)
+        AdActivityResult.from(unwrap(http.get('/ads/account/activity', query)))
+      end
+
+      def labels(connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(AdLabel, unwrap(http.get(
+                                     '/ads/account/labels', account_query(workspace_id, connection_id, ad_account_id)
+                                   )))
+      end
+
+      def create_label(workspace_id:, connection_id:, ad_account_id:, name:)
+        body = {
+          'workspaceId' => workspace_id, 'connectionId' => connection_id,
+          'adAccountId' => ad_account_id, 'name' => name
+        }
+        AdLabel.from(unwrap(http.post('/ads/account/labels', body)))
+      end
+
+      def update_label(label_id, workspace_id:, connection_id:, ad_account_id:, name:)
+        AdLabel.from(patch_object(
+                       "/ads/account/labels/#{label_id}", workspace_id, connection_id,
+                       'workspaceId' => workspace_id, 'connectionId' => connection_id,
+                       'adAccountId' => ad_account_id, 'name' => name
+                     ))
+      end
+
+      def delete_label(label_id, workspace_id:, connection_id:, ad_account_id:)
+        http.request(
+          :delete, "/ads/account/labels/#{label_id}",
+          params: account_query(workspace_id, connection_id, ad_account_id)
+        )
+        nil
+      end
+
+      # Keeps whatever labels the object already carries. `level` is
+      # "campaign", "ad_set" or "ad".
+      def apply_label(label_id, workspace_id:, connection_id:, ad_account_id:, object_id:, level:)
+        http.post("/ads/account/labels/#{label_id}/apply", {
+                    'workspaceId' => workspace_id, 'connectionId' => connection_id,
+                    'adAccountId' => ad_account_id, 'objectId' => object_id, 'level' => level
+                  })
+        nil
+      end
+
+      def studies(connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(AdStudy, unwrap(http.get(
+                                     '/ads/account/studies', account_query(workspace_id, connection_id, ad_account_id)
+                                   )))
+      end
+
+      # Splits traffic evenly across two to five `cells` of "name" and "objectIds".
+      def create_study(workspace_id:, connection_id:, ad_account_id:, name:, start_at:, end_at:,
+                       cells:, description: nil)
+        body = compact_nil(
+          'workspaceId' => workspace_id, 'connectionId' => connection_id, 'adAccountId' => ad_account_id,
+          'name' => name, 'startAt' => start_at.to_s, 'endAt' => end_at.to_s,
+          'cells' => cells.map { |c| stringify(c) }, 'description' => description
+        )
+        AdStudy.from(unwrap(http.post('/ads/account/studies', body)))
+      end
+
+      def study(study_id, connection_id:, ad_account_id:, workspace_id: nil)
+        AdStudy.from(unwrap(http.get(
+                              "/ads/account/studies/#{study_id}", account_query(workspace_id, connection_id,
+                                                                                ad_account_id)
+                            )))
+      end
+
+      def delete_study(study_id, workspace_id:, connection_id:, ad_account_id:)
+        http.request(
+          :delete, "/ads/account/studies/#{study_id}",
+          params: account_query(workspace_id, connection_id, ad_account_id)
+        )
+        nil
+      end
+
+      # How many iOS 14 campaigns the account may run at once, per app.
+      def ios_campaign_limits(connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(IosCampaignLimits, unwrap(http.get(
+                                               '/ads/account/ios-limits', account_query(workspace_id, connection_id,
+                                                                                        ad_account_id)
+                                             )))
+      end
+
+      def high_demand_periods(connection_id:, ad_account_id:, workspace_id: nil)
+        query = account_query(workspace_id, connection_id, ad_account_id)
+        parse_list(HighDemandPeriod, unwrap(http.get('/ads/account/high-demand-periods', query)))
+      end
+
+      # Tells the network to expect heavier spend over a window, so pacing allows
+      # for it. `budget_value_type` is "ABSOLUTE" or "MULTIPLIER".
+      def create_high_demand_period(workspace_id:, connection_id:, ad_account_id:, start_at:, end_at:,
+                                    budget_value:, budget_value_type:)
+        body = {
+          'workspaceId' => workspace_id, 'connectionId' => connection_id, 'adAccountId' => ad_account_id,
+          'startAt' => start_at.to_s, 'endAt' => end_at.to_s,
+          'budgetValue' => budget_value, 'budgetValueType' => budget_value_type
+        }
+        HighDemandPeriod.from(unwrap(http.post('/ads/account/high-demand-periods', body)))
+      end
+
+      def delete_high_demand_period(period_id, workspace_id:, connection_id:, ad_account_id:)
+        http.request(
+          :delete, "/ads/account/high-demand-periods/#{period_id}",
+          params: account_query(workspace_id, connection_id, ad_account_id)
+        )
+        nil
+      end
+
+      def value_rule_sets(connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(ValueRuleSet, unwrap(http.get(
+                                          '/ads/account/value-rule-sets', account_query(workspace_id, connection_id,
+                                                                                        ad_account_id)
+                                        )))
+      end
+
+      # Weights conversions so some audiences count for more than others.
+      def create_value_rule_set(workspace_id:, connection_id:, ad_account_id:, name:, rules:)
+        body = {
+          'workspaceId' => workspace_id, 'connectionId' => connection_id, 'adAccountId' => ad_account_id,
+          'name' => name, 'rules' => rules.map { |r| stringify(r) }
+        }
+        ValueRuleSet.from(unwrap(http.post('/ads/account/value-rule-sets', body)))
+      end
+
+      def delete_value_rule_set(rule_set_id, workspace_id:, connection_id:, ad_account_id:)
+        http.request(
+          :delete, "/ads/account/value-rule-sets/#{rule_set_id}",
+          params: account_query(workspace_id, connection_id, ad_account_id)
+        )
+        nil
+      end
+
       private
+
+      def account_query(workspace_id, connection_id, ad_account_id)
+        meta_query(workspace_id, connection_id).merge('ad_account_id' => ad_account_id)
+      end
+
+      def reach_frequency_action(prediction_id, action, workspace_id, connection_id, ad_account_id)
+        body = {
+          'workspaceId' => workspace_id, 'connectionId' => connection_id, 'adAccountId' => ad_account_id
+        }
+        ReachFrequencyPrediction.from(
+          unwrap(http.post("/ads/reach-frequency/#{prediction_id}/#{action}", body))
+        )
+      end
 
       def meta_query(workspace_id, connection_id)
         { 'workspace_id' => workspace_id, 'connection_id' => connection_id }

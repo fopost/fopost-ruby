@@ -76,6 +76,10 @@ module Fopost
         request(:put, path, json: json)
       end
 
+      def patch(path, json = nil)
+        request(:patch, path, json: json)
+      end
+
       def delete(path, json = nil)
         request(:delete, path, json: json)
       end
@@ -105,7 +109,10 @@ module Fopost
         query = (params || {}).compact
         unless query.empty?
           existing = uri.query.to_s
-          encoded = URI.encode_www_form(query.map { |k, v| [k.to_s, v.to_s] })
+          # An Array repeats the bare parameter, which is how the API reads a
+          # multi-valued filter like `daily_metrics`.
+          pairs = query.flat_map { |k, v| Array(v).map { |item| [k.to_s, item.to_s] } }
+          encoded = URI.encode_www_form(pairs)
           uri.query = existing.empty? ? encoded : "#{existing}&#{encoded}"
         end
         uri

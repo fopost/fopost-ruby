@@ -8,6 +8,17 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `whatsapp` resource for a WhatsApp Business connection: the business profile
+  (`profile`, `update_profile`, `request_display_name`, `set_username`), message
+  templates including the platform's own library (`templates`, `create_template`,
+  `import_template`, …), groups, blocking, commerce settings and flows
+  (`create_flow`, `upload_flow_json`, `publish_flow`, `flow_responses`, …), plus
+  `account_events`. All need the `accounts` scope.
+- `whatsapp.create_sandbox_session` and `sandbox_sessions` invite a tester to the
+  platform-owned WhatsApp test number. Inviting sends a template, so it needs the
+  `publish` scope.
+- `whatsapp` on `Fopost::PLATFORMS`.
+
 - `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
 - `accounts.list_slack_channels`, `list_slack_members`, `get_slack_identity` and `update_slack_identity`

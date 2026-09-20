@@ -781,4 +781,106 @@ module Fopost
     attribute :created_at, :time
     attribute :workspace_id
   end
+  # ─── WhatsApp Business ─────────────────────────────────────────
+  #
+  # The platform owns these resources, so nothing here is a cached copy: a
+  # template's status is whatever the platform assigned it.
+
+  # A message template on a WhatsApp Business Account.
+  class WhatsappTemplate < Model
+    attribute :id
+    attribute :name
+    attribute :language
+    attribute :category
+    # The review status the platform assigned: APPROVED, PENDING, REJECTED, …
+    attribute :status
+    attribute :rejected_reason
+    attribute :components
+    attribute :quality_score
+  end
+
+  # The business profile on a WhatsApp number, plus its quality and limit tier.
+  class WhatsappProfile < Model
+    attribute :about
+    attribute :address
+    attribute :description
+    attribute :email
+    attribute :vertical
+    attribute :websites
+    attribute :profile_picture_url
+    attribute :display_name
+    # The platform's review state for the display name.
+    attribute :display_name_status
+    attribute :username
+    attribute :quality_rating
+    attribute :messaging_limit_tier
+  end
+
+  # A group on a WhatsApp number. Participation is invite-only.
+  class WhatsappGroup < Model
+    attribute :id
+    attribute :subject
+    attribute :description
+    attribute :participant_count
+    attribute :invite_link
+    attribute :created_at, :time
+  end
+
+  # What the platform took and what it refused.
+  class WhatsappBlockResult < Model
+    attribute :blocked
+    attribute :unblocked
+    attribute :failed
+  end
+
+  # Whether the cart and catalog show on the number, and which catalog is linked.
+  class WhatsappCommerceSettings < Model
+    attribute :cart_enabled
+    attribute :catalog_visible
+    attribute :catalog_id
+  end
+
+  # An in-chat form. The platform validates it and owns its status.
+  class WhatsappFlow < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :categories
+    attribute :validation_errors
+    attribute :endpoint_uri
+    attribute :json_version
+    attribute :preview_url
+    attribute :preview_expires_at, :time
+  end
+
+  # The platform answers a flow upload with its validation errors, not a refusal.
+  class WhatsappFlowJsonResult < Model
+    attribute :success
+    attribute :validation_errors
+  end
+
+  # What one person submitted through a flow.
+  class WhatsappFlowResponse < Model
+    attribute :message_id
+    attribute :wa_id
+    attribute :flow_token
+    attribute :answers
+    attribute :responded_at, :time
+  end
+
+  # Whether a key is registered. The key itself never comes back.
+  class WhatsappEncryptionKeyStatus < Model
+    attribute :has_key
+    attribute :signature_status
+  end
+
+  # A sandbox invitation. The tester's number is never stored in full.
+  class WhatsappSandboxSession < Model
+    attribute :id
+    attribute :status
+    attribute :phone_number_last4
+    attribute :invited_at, :time
+    attribute :activated_at, :time
+    attribute :expires_at, :time
+  end
 end

@@ -335,6 +335,38 @@ upload.upload_url   # PUT the bytes here with upload.headers
 client.media.complete(upload.upload_id)
 ```
 
+## WhatsApp Business
+
+A WhatsApp Business number you already own. The platform owns the templates,
+flows, profile and commerce settings, so every call is live; all of it answers
+503 until WhatsApp is set up. Needs the `accounts` scope, except the sandbox,
+which sends a template and needs `publish`.
+
+```ruby
+profile = client.whatsapp.profile(account_id)
+profile.quality_rating                  # as the platform reports it
+
+# Filing a template returns the review status the platform gave it.
+template = client.whatsapp.create_template(
+  account_id,
+  name: 'order_shipped',
+  language: 'en_US',
+  category: 'UTILITY',
+  components: [{ type: 'BODY', text: 'Your order is on its way.' }]
+)
+template.status                         # PENDING until the platform approves it
+
+# A flow is created as a draft, its screens uploaded, then published.
+flow = client.whatsapp.create_flow(account_id, name: 'Book a fitting', categories: ['LEAD_GENERATION'])
+client.whatsapp.upload_flow_json(account_id, flow.id, { 'version' => '7.0', 'screens' => [] })
+client.whatsapp.publish_flow(account_id, flow.id)
+client.whatsapp.flow_responses(account_id)
+
+# Groups are invite-only: there is no endpoint that adds a participant.
+group = client.whatsapp.create_group(account_id, subject: 'Launch crew')
+client.whatsapp.group_invite_link(account_id, group.id)
+```
+
 ## Errors
 
 Every non-2xx response raises. All of them are rescuable as `Fopost::Error`.

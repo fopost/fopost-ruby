@@ -35,6 +35,7 @@ module Fopost
     nostr
     whop
     skool
+    whatsapp
   ].freeze
 
   POST_STATUSES = %w[

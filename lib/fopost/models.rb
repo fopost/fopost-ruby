@@ -1141,6 +1141,30 @@ module Fopost
     attribute :next_cursor
   end
 
+  # Who did something: `user`, `api_key`, `agent` or `system`.
+  class ActivityActor < Model
+    attribute :type
+    attribute :name
+  end
+
+  # One thing that happened in a workspace. A `security` kind is an audit row.
+  class ActivityEvent < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :kind
+    attribute :ref_type
+    attribute :ref_id
+    attribute :summary
+    attribute :actor, ActivityActor
+    attribute :time, :time
+  end
+
+  # One page of activity; pass `next_cursor` back as `cursor:` for the next.
+  class ActivityPage < Model
+    attribute :events, [ActivityEvent]
+    attribute :next_cursor
+  end
+
   class LeadPage < Model
     attribute :connection_id
     attribute :page_id

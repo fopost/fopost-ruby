@@ -10,6 +10,14 @@ All notable changes to this gem are documented here. The format follows
 
 - `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
+- Meta messaging settings on `accounts`: `get_ice_breakers`, `set_ice_breakers` and
+  `delete_ice_breakers` (Facebook Pages and Instagram), plus `get_persistent_menu`,
+  `set_persistent_menu`, `delete_persistent_menu`, `get_greeting`, `set_greeting` and
+  `delete_greeting` (Facebook Pages). A network without a field answers 400.
+- `accounts.get_webhook_subscription` reports whether the network is still delivering events
+  for an account, and `resubscribe_webhook` puts a lapsed subscription back.
+- `inbox.handover` passes a Messenger thread to another Meta app, or takes it back when no
+  `app_id` is given (`inbox` scope, plus `publish`).
 - `accounts.list_slack_channels`, `list_slack_members`, `get_slack_identity` and `update_slack_identity`
   (`accounts` scope), with the `SlackChannel`, `SlackMember` and `SlackIdentity` models.
 

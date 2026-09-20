@@ -181,6 +181,14 @@ module Fopost
         as_hash(unwrap(http.post("/inbox/conversations/#{conversation_id}/typing", body)))['typing']
       end
 
+      # Pass a Messenger thread to another Meta app, or take it back without an `app_id`.
+      def handover(conversation_id, account_id:, app_id: nil, metadata: nil)
+        body = { 'account_id' => account_id }
+        body['app_id'] = app_id unless app_id.nil?
+        body['metadata'] = metadata unless metadata.nil?
+        InboxHandover.new(unwrap(http.post("/inbox/conversations/#{conversation_id}/handover", body)))
+      end
+
       # Replies an automation or the agent drafted that a person still has to send.
       def approvals(workspace_id: nil)
         parse_list(InboxApproval, unwrap(http.get('/inbox/approvals', { 'workspace_id' => workspace_id })))

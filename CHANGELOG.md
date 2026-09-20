@@ -8,6 +8,9 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `InboxItem#moderation_status` carries the platform's own state for a comment
+  (`published`, `held`, `spam`, `rejected`), and `InboxAccount#reconnect_required`
+  flags an account connected before the inbox asked for a permission it needs.
 - `client.broadcasts`: one message into every conversation the workspace already has
   with a segment of its contacts. `list`, `get`, `create`, `update`, `delete`, `send`,
   `cancel`, `recipients`. Reading needs the `inbox` scope; `send` and `cancel` also need

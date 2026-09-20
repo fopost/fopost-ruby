@@ -552,6 +552,8 @@ module Fopost
     attribute :can_send_media
     attribute :can_quick_reply
     attribute :can_private_reply
+    # The platform's own state: published, held, spam or rejected.
+    attribute :moderation_status
     attribute :post, :hash
     attribute :post_context, InboxPostContext
     attribute :account, InboxAccountRef
@@ -599,6 +601,8 @@ module Fopost
     attribute :dm_supported
     attribute :dm_pending_reason
     attribute :can_start_conversation
+    # The grant predates a permission the inbox needs; reconnect the account once.
+    attribute :reconnect_required
   end
 
   # One thing the workspace has told FoPost about itself: an FAQ, a note, a page

@@ -69,7 +69,8 @@ module Fopost
       # Create a standalone ad from a creative. Needs `ads` and `publish`.
       # The ad starts paused unless `paused: false`.
       def create(workspace_id:, connection_id:, ad_account_id:, page_id:, name:, goal:, budget:, targeting:,
-                 text:, headline: nil, destination_url: nil, media_url: nil, url_tags: nil, paused: nil)
+                 text:, headline: nil, destination_url: nil, media_url: nil, url_tags: nil,
+                 spark_post_id: nil, paused: nil)
         body = {
           'workspaceId' => workspace_id,
           'connectionId' => connection_id,
@@ -87,6 +88,7 @@ module Fopost
             'destinationUrl' => destination_url,
             'mediaUrl' => media_url,
             'urlTags' => url_tags,
+            'sparkPostId' => spark_post_id,
             'paused' => paused
           )
         )
@@ -196,7 +198,105 @@ module Fopost
 
       # `goal` is engagement, traffic, awareness or video_views. Starts paused
       # unless `paused: false`. Needs `ads` and `publish`.
-      def create_campaign(workspace_id:, connection_id:, ad_account_id:, name:, goal:, paused: nil)
+      # TikTok's Business Centers, the one network-named read in this resource.
+      def tiktok_business_centers(connection_id:, workspace_id: nil)
+        parse_list(
+          AdBusinessCenter,
+          unwrap(
+            http.get(
+              '/ads/tiktok/business-centers',
+              { 'workspace_id' => workspace_id, 'connection_id' => connection_id }
+            )
+          )
+        )
+      end
+
+      # The accounts an ad can run as; an identity id is a page_id.
+      def tiktok_identities(connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(
+          AdIdentity,
+          unwrap(
+            http.get(
+              '/ads/tiktok/identities',
+              { 'workspace_id' => workspace_id, 'connection_id' => connection_id,
+                'ad_account_id' => ad_account_id }
+            )
+          )
+        )
+      end
+
+      # Posts already live under an identity, each a candidate Spark ad.
+      def spark_posts(connection_id:, ad_account_id:, identity_id:, workspace_id: nil)
+        parse_list(
+          SparkPost,
+          unwrap(
+            http.get(
+              '/ads/spark-posts',
+              { 'workspace_id' => workspace_id, 'connection_id' => connection_id,
+                'ad_account_id' => ad_account_id, 'identity_id' => identity_id }
+            )
+          )
+        )
+      end
+
+      # Offline conversions. Identifiers are hashed before they leave FoPost.
+      def upload_conversions(workspace_id:, connection_id:, ad_account_id:, pixel_id:, events:)
+        unwrap(
+          http.post(
+            '/ads/conversions',
+            { 'workspaceId' => workspace_id, 'connectionId' => connection_id,
+              'adAccountId' => ad_account_id, 'pixelId' => pixel_id,
+              'events' => events.map { |e| stringify(e) } }
+          )
+        )
+      end
+
+      # One page of an ad's comments; pass `next_cursor` back as `after`.
+      def comments(connection_id:, ad_id:, after: nil, workspace_id: nil)
+        AdCommentsPage.new(
+          unwrap(
+            http.get(
+              '/ads/comments',
+              { 'workspace_id' => workspace_id, 'connection_id' => connection_id,
+                'ad_id' => ad_id, 'after' => after }
+            )
+          )
+        )
+      end
+
+      # Needs the `publish` scope as well as `ads`.
+      def reply_to_comment(comment_id, workspace_id:, connection_id:, ad_id:, text:)
+        unwrap(
+          http.post(
+            "/ads/comments/#{comment_id}/reply",
+            { 'workspaceId' => workspace_id, 'connectionId' => connection_id,
+              'adId' => ad_id, 'text' => text }
+          )
+        )
+      end
+
+      # Needs the `publish` scope as well as `ads`.
+      def set_comment_hidden(comment_id, workspace_id:, connection_id:, ad_id:, hidden:)
+        http.post(
+          "/ads/comments/#{comment_id}/hide",
+          { 'workspaceId' => workspace_id, 'connectionId' => connection_id,
+            'adId' => ad_id, 'hidden' => hidden }
+        )
+        nil
+      end
+
+      # One already gone on the network succeeds. Needs `publish` as well as `ads`.
+      def delete_comment(comment_id, workspace_id:, connection_id:, ad_id:)
+        http.request(
+          :delete,
+          "/ads/comments/#{comment_id}",
+          json: { 'workspaceId' => workspace_id, 'connectionId' => connection_id, 'adId' => ad_id }
+        )
+        nil
+      end
+
+      def create_campaign(workspace_id:, connection_id:, ad_account_id:, name:, goal:, paused: nil,
+                          smart_plus: nil)
         body = {
           'workspaceId' => workspace_id,
           'connectionId' => connection_id,
@@ -205,6 +305,7 @@ module Fopost
           'goal' => goal
         }
         body['paused'] = paused unless paused.nil?
+        body['smartPlus'] = smart_plus unless smart_plus.nil?
         AdCampaign.new(unwrap(http.post('/ads/campaigns', body)))
       end
 

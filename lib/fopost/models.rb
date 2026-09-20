@@ -597,6 +597,51 @@ module Fopost
     attribute :detail
   end
 
+  # A Business Center, or the network's equivalent grouping of ad accounts.
+  class AdBusinessCenter < Model
+    attribute :id
+    attribute :name
+    attribute :role
+  end
+
+  # The account an ad runs as. Meta calls it a Page, TikTok an identity.
+  class AdIdentity < Model
+    attribute :id
+    attribute :type
+    attribute :name
+    attribute :avatar_url
+  end
+
+  # A post already live on the network, offered as the source of a Spark ad.
+  class SparkPost < Model
+    attribute :id
+    attribute :identity_id
+    attribute :caption
+    attribute :thumbnail_url
+    attribute :created_at
+    attribute :views
+  end
+
+  # A comment on an ad, read live from the network and never stored.
+  class AdComment < Model
+    attribute :id
+    attribute :ad_id
+    attribute :text
+    attribute :author_name
+    attribute :author_avatar_url
+    attribute :created_at
+    attribute :likes
+    attribute :reply_count
+    attribute :hidden
+    attribute :parent_id
+  end
+
+  # One page of an ad's comments; pass `next_cursor` back as `after`.
+  class AdCommentsPage < Model
+    attribute :comments, [AdComment]
+    attribute :next_cursor
+  end
+
   class LeadForm < Model
     attribute :id
     attribute :name

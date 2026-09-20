@@ -50,6 +50,9 @@ All notable changes to this gem are documented here. The format follows
   `DiscordMessage`, `DiscordMessageRef`, `DiscordThread`, `DiscordScheduledEvent`,
   `DiscordMember` and `DiscordRole` models. A webhook connection answers
   `409 webhook_connection`.
+- `DiscordChannel#can_post` says whether the bot may actually post in a channel;
+  a channel permission in Discord can shut it out. `switch_discord_channel` answers
+  `409 channel_not_writable` for one.
 
 ## [0.3.0] - 2026-09-19
 

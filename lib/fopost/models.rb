@@ -176,6 +176,8 @@ module Fopost
     attribute :type
     attribute :parent_id
     attribute :nsfw
+    # False when a channel permission in Discord shuts the bot out.
+    attribute :can_post
     attribute :is_current
   end
 

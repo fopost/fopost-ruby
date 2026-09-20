@@ -8,6 +8,24 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `client.broadcasts`: one message into every conversation the workspace already has
+  with a segment of its contacts. `list`, `get`, `create`, `update`, `delete`, `send`,
+  `cancel`, `recipients`. Reading needs the `inbox` scope; `send` and `cancel` also need
+  `publish`.
+- `client.sequences`: a series of messages on a delay. `list`, `get`, `create`, `update`,
+  `delete`, `enroll`, `unenroll`, `enrollments`. `enroll` and `unenroll` need `publish`.
+- Both honour each network's messaging window server-side. Messenger and Instagram take a
+  business-initiated message only within 24 hours of the contact's last one, so recipients
+  outside it come back `skipped` with `skip_reason` `window_closed` and nothing is
+  attempted — the number sent is often lower than the audience.
+
+- `contacts` resource: the people behind the inbox. `list`, `get`, `create`, `update`,
+  `delete`, `conversations` (the threads one person appears in), `import` (CSV), and
+  `list_fields` / `create_field` / `update_field` / `delete_field` for the custom columns
+  a workspace keeps. All need the `inbox` scope.
+- `contacts.conversation_analytics` reads `/v1/analytics/inbox/conversations`: volume and
+  median reply time per thread. Needs the `analytics` scope.
+
 - `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
 - Meta messaging settings on `accounts`: `get_ice_breakers`, `set_ice_breakers` and

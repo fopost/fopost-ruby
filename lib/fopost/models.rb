@@ -954,4 +954,196 @@ module Fopost
     attribute :created_at, :time
     attribute :workspace_id
   end
+  # ─── Contacts ────────────────────────────────────────────────────
+
+  # One handle on one network. The handle is lower-cased with no leading @.
+  class ContactChannel < Model
+    attribute :platform
+    attribute :handle
+    # The platform's own id for this person, when the network gave us one.
+    attribute :external_id
+  end
+
+  class ContactLabel < Model
+    attribute :id
+    attribute :name
+    attribute :color
+  end
+
+  # One person, however many handles they write from.
+  class Contact < Model
+    attribute :id
+    attribute :display_name
+    attribute :channels, [ContactChannel]
+    # inbox, radar or import — what first created the row.
+    attribute :source
+    attribute :note
+    attribute :first_seen_at, :time
+    attribute :last_seen_at, :time
+    # Custom field values, keyed by field key.
+    attribute :fields, :hash
+    attribute :labels, [ContactLabel]
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One thread a contact appears in.
+  class ContactConversation < Model
+    # How the inbox groups it: DM thread id, else root post id, else handle.
+    attribute :key
+    attribute :account_id
+    attribute :account_username
+    attribute :platform
+    attribute :messages
+    attribute :received
+    attribute :sent
+    attribute :last_message_at, :time
+    attribute :last_item_id
+  end
+
+  class ContactImportSkip < Model
+    attribute :row
+    attribute :reason
+  end
+
+  # What a CSV import did.
+  class ContactImportResult < Model
+    attribute :created
+    # Rows that folded into a contact already on file.
+    attribute :merged
+    attribute :skipped, [ContactImportSkip]
+    # Columns that named neither a reserved field nor a custom field.
+    attribute :unknown_columns
+  end
+
+  # A column the workspace invented to keep about its contacts.
+  class ContactField < Model
+    attribute :id
+    # Lower-case key, also the CSV column header. Fixed once created.
+    attribute :key
+    attribute :name
+    # text, number, date, select or boolean.
+    attribute :type
+    # Allowed values when the type is select.
+    attribute :options
+    attribute :position
+  end
+
+  class ConversationAnalyticsRow < Model
+    attribute :key
+    attribute :account_id
+    attribute :platform
+    attribute :received
+    attribute :sent
+    attribute :answered
+    attribute :open
+    # Median minutes to the first reply in this thread.
+    attribute :median_response_minutes
+    attribute :first_message_at, :time
+    attribute :last_message_at, :time
+  end
+
+  # Inbox analytics broken out per thread.
+  class ConversationAnalytics < Model
+    attribute :conversations, [ConversationAnalyticsRow]
+    attribute :total
+    attribute :page
+    attribute :per_page
+  end
+
+  # The pagination block a contacts listing returns.
+  class ContactPageMeta < Model
+    attribute :page
+    attribute :per_page
+    attribute :total
+  end
+
+  # ─── Broadcasts and sequences ────────────────────────────────────
+
+  # What became of a broadcast's recipients, by status.
+  class BroadcastCounts < Model
+    attribute :total
+    attribute :sent
+    # Usually the messaging window doing its job.
+    attribute :skipped
+    attribute :failed
+    attribute :pending
+  end
+
+  # One message, sent into conversations the workspace already has.
+  class Broadcast < Model
+    attribute :id
+    # Internal only; never sent to anyone.
+    attribute :name
+    attribute :text
+    attribute :account_id
+    attribute :audience, :hash
+    # draft, scheduled, sending, sent or cancelled.
+    attribute :status
+    attribute :scheduled_at, :time
+    attribute :sent_at, :time
+    attribute :created_at, :time
+    attribute :counts, BroadcastCounts
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One contact on one broadcast, and what became of their message.
+  class BroadcastRecipient < Model
+    attribute :contact_id
+    attribute :display_name
+    # pending, sent, skipped or failed.
+    attribute :status
+    # Why nothing was sent: window_closed, no_conversation or
+    # unsupported_platform. window_closed means the network's messaging
+    # window had shut, so nothing was attempted.
+    attribute :skip_reason
+    attribute :sent_at, :time
+    attribute :error
+  end
+
+  # One message and how long after the previous step it goes out.
+  class SequenceStep < Model
+    attribute :delay_hours
+    attribute :text
+    attribute :media_id
+  end
+
+  # Where a sequence's enrollments stand, by status.
+  class SequenceEnrollmentCounts < Model
+    attribute :total
+    attribute :active
+    attribute :completed
+    attribute :stopped
+    attribute :failed
+  end
+
+  # A series of messages, each a delay after the one before.
+  class Sequence < Model
+    attribute :id
+    attribute :name
+    attribute :account_id
+    attribute :steps, [SequenceStep]
+    # active or paused. A paused sequence fires nothing.
+    attribute :status
+    attribute :created_at, :time
+    attribute :enrollments, SequenceEnrollmentCounts
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One contact walking one sequence.
+  class Enrollment < Model
+    attribute :id
+    attribute :contact_id
+    attribute :display_name
+    # Steps already sent, so also the index of the next one.
+    attribute :step
+    attribute :next_at, :time
+    # active, completed, stopped or failed.
+    attribute :status
+    attribute :last_sent_at, :time
+    # On a skipped step, the reason it was skipped.
+    attribute :error
+  end
 end

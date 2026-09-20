@@ -212,6 +212,24 @@ file = client.validate.media(url: 'https://example.com/a.png')
 puts file.ok ? file.type : file.issues.join(', ')
 ```
 
+## Activity
+
+What happened in a workspace, newest first. Needs the `analytics` scope.
+
+```ruby
+page = client.activity.list(workspace_id: workspace.id)
+page.events.each { |event| puts "#{event.time} #{event.actor.name}: #{event.summary}" }
+page.next_cursor  # pass back as cursor: for the next page
+```
+
+`kind: 'security'` is the audit log: members joining, leaving or changing role
+and access, and changes to two-step verification, passkeys, single sign-on and
+signed-in devices. Those rows are append-only and never expire.
+
+```ruby
+audit = client.activity.list(workspace_id: workspace.id, kind: 'security')
+```
+
 ## Inbox
 
 Comments, mentions and direct messages on connected accounts. Needs the `inbox` scope.

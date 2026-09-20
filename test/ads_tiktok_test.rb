@@ -15,14 +15,17 @@ class AdsTikTokTest < Minitest::Test
             json: { 'data' => [{ 'id' => 'item_99', 'identityId' => 'idt_1', 'views' => 48_213 }] })
 
     centers = client.ads.tiktok_business_centers(workspace_id: 'ws_1', connection_id: 'conn_1')
+
     assert_equal 'Brand HQ', centers[0].name
 
     identities = client.ads.tiktok_identities(workspace_id: 'ws_1', connection_id: 'conn_1',
                                               ad_account_id: '7011')
+
     assert_equal 'CUSTOMIZED_USER', identities[0].type
 
     posts = client.ads.spark_posts(workspace_id: 'ws_1', connection_id: 'conn_1',
                                    ad_account_id: '7011', identity_id: 'idt_1')
+
     assert_equal 48_213, posts[0].views
     assert_equal 'idt_1', transport.last.query['identity_id']
   end
@@ -36,10 +39,12 @@ class AdsTikTokTest < Minitest::Test
                       page_id: 'idt_1', name: 'Spark', goal: 'traffic',
                       budget: { 'minor' => 2000, 'type' => 'daily' },
                       targeting: { 'countries' => ['US'] }, text: '', spark_post_id: 'item_99')
+
     assert_equal 'item_99', transport.last.json['sparkPostId']
 
     client.ads.create_campaign(workspace_id: 'ws_1', connection_id: 'conn_1', ad_account_id: '7011',
                                name: 'Smart', goal: 'traffic', smart_plus: true)
+
     assert_equal true, transport.last.json['smartPlus']
   end
 
@@ -66,15 +71,18 @@ class AdsTikTokTest < Minitest::Test
       .stub(:delete, '/ads/comments/cm_1', json: { 'message' => 'Comment deleted' })
 
     page = client.ads.comments(workspace_id: 'ws_1', connection_id: 'conn_1', ad_id: 'ad_1')
+
     assert_equal '2', page.next_cursor
     assert_equal true, page.comments[0].hidden
     assert_equal 3, page.comments[0].likes
 
     scope = { workspace_id: 'ws_1', connection_id: 'conn_1', ad_id: 'ad_1' }
+
     assert_equal 'cm_2', client.ads.reply_to_comment('cm_1', text: 'Friday!', **scope)['replyId']
     assert_equal 'ad_1', transport.last.json['adId']
 
     client.ads.set_comment_hidden('cm_1', hidden: true, **scope)
+
     assert_equal true, transport.last.json['hidden']
 
     client.ads.delete_comment('cm_1', **scope)

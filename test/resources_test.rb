@@ -171,7 +171,7 @@ class ResourcesTest < Minitest::Test
 
   def test_discord_channels_and_switch
     channel = { 'id' => 'c2', 'name' => 'launches', 'type' => 0, 'parent_id' => nil,
-                'nsfw' => false, 'is_current' => true }
+                'nsfw' => false, 'can_post' => true, 'is_current' => true }
     transport.stub(:get, '/accounts/acc_1/discord/channels', json: { 'data' => [channel] })
     transport.stub(:patch, '/accounts/acc_1/discord/channels/current', json: { 'data' => channel })
 

@@ -8,10 +8,48 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `client.broadcasts`: one message into every conversation the workspace already has
+  with a segment of its contacts. `list`, `get`, `create`, `update`, `delete`, `send`,
+  `cancel`, `recipients`. Reading needs the `inbox` scope; `send` and `cancel` also need
+  `publish`.
+- `client.sequences`: a series of messages on a delay. `list`, `get`, `create`, `update`,
+  `delete`, `enroll`, `unenroll`, `enrollments`. `enroll` and `unenroll` need `publish`.
+- Both honour each network's messaging window server-side. Messenger and Instagram take a
+  business-initiated message only within 24 hours of the contact's last one, so recipients
+  outside it come back `skipped` with `skip_reason` `window_closed` and nothing is
+  attempted — the number sent is often lower than the audience.
+
+- `contacts` resource: the people behind the inbox. `list`, `get`, `create`, `update`,
+  `delete`, `conversations` (the threads one person appears in), `import` (CSV), and
+  `list_fields` / `create_field` / `update_field` / `delete_field` for the custom columns
+  a workspace keeps. All need the `inbox` scope.
+- `contacts.conversation_analytics` reads `/v1/analytics/inbox/conversations`: volume and
+  median reply time per thread. Needs the `analytics` scope.
+
 - `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
+- Meta messaging settings on `accounts`: `get_ice_breakers`, `set_ice_breakers` and
+  `delete_ice_breakers` (Facebook Pages and Instagram), plus `get_persistent_menu`,
+  `set_persistent_menu`, `delete_persistent_menu`, `get_greeting`, `set_greeting` and
+  `delete_greeting` (Facebook Pages). A network without a field answers 400.
+- `accounts.get_webhook_subscription` reports whether the network is still delivering events
+  for an account, and `resubscribe_webhook` puts a lapsed subscription back.
+- `inbox.handover` passes a Messenger thread to another Meta app, or takes it back when no
+  `app_id` is given (`inbox` scope, plus `publish`).
 - `accounts.list_slack_channels`, `list_slack_members`, `get_slack_identity` and `update_slack_identity`
   (`accounts` scope), with the `SlackChannel`, `SlackMember` and `SlackIdentity` models.
+- The Discord bot surface on `accounts` (`accounts` scope, plus `publish` for anything that
+  posts): `list_discord_channels`, `switch_discord_channel`, `get_discord_identity`,
+  `update_discord_identity`, `list_discord_pins`, `delete_discord_message`,
+  `pin_discord_message`, `unpin_discord_message`, `crosspost_discord_message`,
+  `create_discord_thread`, `send_discord_dm`, `list_discord_events`, `get_discord_event`,
+  `create_discord_event`, `update_discord_event`, `delete_discord_event`,
+  `list_discord_members`, `get_discord_member`, `list_discord_roles`, `create_discord_role`,
+  `update_discord_role`, `delete_discord_role`, `add_discord_member_role` and
+  `remove_discord_member_role`, with the `DiscordChannel`, `DiscordIdentity`,
+  `DiscordMessage`, `DiscordMessageRef`, `DiscordThread`, `DiscordScheduledEvent`,
+  `DiscordMember` and `DiscordRole` models. A webhook connection answers
+  `409 webhook_connection`.
 
 ## [0.3.0] - 2026-09-19
 

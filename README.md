@@ -144,6 +144,36 @@ client.accounts.list_slack_channels(account_id)
 client.accounts.list_slack_members(account_id)
 client.accounts.get_slack_identity(account_id)
 client.accounts.update_slack_identity(account_id, username: 'Launch Bot', icon_emoji: ':rocket:')   # nil clears
+
+# Meta messaging settings. Ice breakers on Facebook Pages and Instagram; the menu and
+# greeting on Pages only. A network without a field answers 400.
+client.accounts.set_ice_breakers(account_id, [{ question: 'What are your hours?', payload: 'HOURS' }])
+client.accounts.set_persistent_menu(account_id, [{ locale: 'default',
+                                                   call_to_actions: [{ type: 'postback', title: 'Talk to Us',
+                                                                       payload: 'HUMAN' }] }])
+client.accounts.set_greeting(account_id, [{ text: 'Hi! Ask us anything.' }])
+
+# Is the network still delivering events for this account?
+subscription = client.accounts.get_webhook_subscription(account_id)
+client.accounts.resubscribe_webhook(account_id) unless subscription.subscribed
+```
+
+On a Discord bot connection, read and change the channel it posts to and manage the server itself:
+
+```ruby
+client.accounts.list_discord_channels(account_id)
+client.accounts.switch_discord_channel(account_id, 'c2')
+client.accounts.update_discord_identity(account_id, username: 'Release Bot')       # nil clears
+
+client.accounts.create_discord_event(account_id, name: 'Launch stream',
+                                                 start_time: '2026-10-01T18:00:00Z',
+                                                 end_time: '2026-10-01T19:00:00Z',
+                                                 location: 'https://yourbrand.com/live')
+
+members = client.accounts.list_discord_members(account_id, query: 'ada')
+role = client.accounts.create_discord_role(account_id, name: 'Beta')
+client.accounts.add_discord_member_role(account_id, role.id, members[0].id)
+client.accounts.send_discord_dm(account_id, members[0].id, 'Welcome aboard')
 ```
 
 ## Pagination
@@ -244,7 +274,143 @@ client.inbox.reply(item.id, media_ids: [media.id], quick_replies: %w[Yes No])
 client.inbox.start_conversation(account_id: account.id, handle: 'jordanvale', text: 'Hi!')
 client.inbox.start_conversation(comment_id: item.id, text: 'Sent you the details')
 client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
+
+# Messenger hand-over: pass the thread to another Meta app, or take it back with no app id.
+client.inbox.handover(item.conversation_id, account_id: item.account.id, app_id: '263902037430900')
+client.inbox.handover(item.conversation_id, account_id: item.account.id)
 ```
+
+## Contacts
+
+The people behind the inbox. A contact is one human however many handles they write from: an inbound item files its author, a reply files whoever you answered, and both fold into whatever is already on file. Needs the `inbox` scope.
+
+```ruby
+page = client.contacts.list(workspace_id: workspace_id, search: 'ada')
+page.each { |contact| puts "#{contact.display_name} — #{contact.channels.size} handles" }
+puts page.meta.total
+
+contact = client.contacts.get(contact_id)
+
+# Folds into whoever already holds the first channel, so this cannot duplicate someone.
+contact = client.contacts.create(
+  workspace_id: workspace_id,
+  channels: [{ 'platform' => 'x', 'handle' => 'ada_writes' }],
+  display_name: 'Ada Okafor',
+  fields: { 'plan_tier' => 'Pro' }
+)
+
+client.contacts.update(contact.id, fields: { 'region' => nil })  # nil clears a field
+client.contacts.delete(contact.id)                               # the messages stay
+
+# The threads this person appears in, newest first.
+client.contacts.conversations(contact.id).each do |thread|
+  puts "#{thread.platform} #{thread.messages} messages, #{thread.received} in"
+end
+
+# platform and handle are required columns; any other column is a custom field key.
+result = client.contacts.import(workspace_id: workspace_id, csv: "platform,handle\nx,ada_writes")
+puts "#{result.created} created, #{result.merged} merged"
+puts result.unknown_columns.inspect
+
+# The columns your workspace keeps.
+fields = client.contacts.list_fields(workspace_id)
+field = client.contacts.create_field(workspace_id: workspace_id, key: 'plan_tier',
+                                     name: 'Plan Tier', type: 'select', options: %w[Free Pro])
+client.contacts.update_field(field.id, name: 'Tier')
+client.contacts.delete_field(field.id)   # removes every answer to it
+
+# Volume and median reply time per thread. Needs the `analytics` scope.
+report = client.contacts.conversation_analytics(days: 30, sort: 'slowest')
+puts report.conversations.first.median_response_minutes
+```
+
+## Broadcasts
+
+One message into every conversation you already have with a segment of your contacts. Nothing is sent into a closed messaging window: Messenger and Instagram take a business-initiated message only within 24 hours of the contact's last one, so recipients outside it come back skipped with `window_closed` rather than attempted. Telegram, Slack, Bluesky and Reddit have no window.
+
+Reading needs the `inbox` scope; `send` and `cancel` also need `publish`.
+
+```ruby
+page = client.broadcasts.list(workspace_id: workspace_id, status: 'sent')
+page.each { |b| puts "#{b.name} — #{b.counts.sent} sent, #{b.counts.skipped} skipped" }
+
+broadcast = client.broadcasts.create(
+  workspace_id: workspace_id,
+  account_id: account_id,
+  name: 'September check-in',
+  text: 'New colours just landed. Want a look?',
+  audience: { 'platforms' => ['instagram'] }
+)
+
+# The recipients count is how many contacts matched, not how many will be
+# messaged — the messaging window decides that.
+client.broadcasts.send(broadcast.id)
+
+# Who was skipped, and why.
+client.broadcasts.recipients(broadcast.id, status: 'skipped').each do |r|
+  puts "#{r.display_name}: #{r.skip_reason}"
+end
+```
+
+## Sequences
+
+A series of messages, each a delay after the one before, walked per enrolled contact. The messaging window applies to every step: one that comes due outside it is skipped rather than sent, and the enrollment carries on.
+
+```ruby
+sequence = client.sequences.create(
+  workspace_id: workspace_id,
+  account_id: account_id,
+  name: 'Welcome',
+  steps: [
+    { 'delay_hours' => 0, 'text' => 'Thanks for the follow — anything I can help with?' },
+    { 'delay_hours' => 48, 'text' => 'Here is what people usually ask us first.' }
+  ]
+)
+
+# By id, or by the same audience filter a broadcast takes.
+client.sequences.enroll(sequence.id, contact_ids: [contact_id])
+client.sequences.enroll(sequence.id, audience: { 'platforms' => ['telegram'] })
+
+# Nothing further fires for them.
+client.sequences.unenroll(sequence.id, [contact_id])
+
+client.sequences.enrollments(sequence.id).each do |e|
+  puts "#{e.display_name} — step #{e.step}, #{e.status}"
+end
+```
+## Knowledge
+
+What the workspace has told FoPost about itself. Retrieval over these sources
+is what grounds a drafted inbox reply in your own answers instead of an
+invented one. Needs the `inbox` scope.
+
+```ruby
+# A source is an FAQ, a note, a page on your own site, or a plain-text/CSV
+# media item. Adding one queues it for indexing, so it comes back `pending`.
+faq = client.knowledge.create(
+  kind: 'faq',
+  title: 'Refunds and returns',
+  content: "Q: How long do refunds take?\nA: Up to 30 days from the request.",
+  workspace_id: workspace.id,
+)
+page = client.knowledge.create(kind: 'url', title: 'Shipping', url: 'https://yourbrand.com/shipping')
+
+client.knowledge.list(workspace_id: workspace.id).each do |source|
+  puts "#{source.title} #{source.status} #{source.chunk_count}"
+end
+
+# Editing the text or the URL re-indexes the source on its own; a page you
+# changed on your own site needs an explicit re-read.
+client.knowledge.update(faq.id, title: 'Refunds')
+client.knowledge.sync(page.id)
+client.knowledge.delete(page.id)
+
+# Empty is the honest answer when nothing stored answers the question.
+client.knowledge.search('how long do refunds take?', top_k: 3).each do |match|
+  puts "#{match.source_title}: #{match.text}"
+end
+```
+
 
 ## Ads
 

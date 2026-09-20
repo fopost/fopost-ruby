@@ -255,6 +255,88 @@ class ResourcesTest < Minitest::Test
     assert_equal 'webhook_connection', error.code
   end
 
+  def test_create_pinterest_board_sends_only_what_was_given
+    board = { 'id' => 'b1', 'name' => 'Recipes', 'privacy' => 'PUBLIC' }
+    transport.stub(:post, '/accounts/acc_1/pinterest/boards', status: 201, json: { 'data' => board })
+
+    created = client.accounts.create_pinterest_board('acc_1', name: 'Recipes')
+
+    assert_equal 'b1', created.id
+    assert_equal({ 'name' => 'Recipes' }, transport.last.json)
+  end
+
+  def test_youtube_playlists_and_transcript
+    playlist = { 'id' => 'PL1', 'title' => 'Tutorials', 'is_default' => true }
+    transport.stub(:get, '/accounts/acc_1/youtube/playlists', json: { 'data' => [playlist] })
+    transport.stub(:get, '/accounts/acc_1/youtube/captions/cap1',
+                   json: { 'data' => { 'caption_id' => 'cap1', 'transcript' => "1\nHello\n" } })
+
+    assert client.accounts.list_youtube_playlists('acc_1')[0].is_default
+    assert_includes client.accounts.read_youtube_transcript('acc_1', 'cap1').transcript, 'Hello'
+  end
+
+  def test_bluesky_languages_round_trip
+    transport.stub(:put, '/accounts/acc_1/bluesky/languages',
+                   json: { 'data' => { 'languages' => %w[en pt-BR] } })
+
+    result = client.accounts.set_bluesky_languages('acc_1', %w[en pt-BR])
+
+    assert_equal %w[en pt-BR], result.languages
+    assert_equal({ 'languages' => %w[en pt-BR] }, transport.last.json)
+  end
+
+  def test_tiktok_creator_info_reports_the_accounts_own_switches
+    transport.stub(:get, '/accounts/acc_1/tiktok/creator-info',
+                   json: { 'data' => { 'privacy_level_options' => ['PUBLIC_TO_EVERYONE'],
+                                       'duet_disabled' => true,
+                                       'max_video_post_duration_sec' => 600 } })
+
+    info = client.accounts.get_tiktok_creator_info('acc_1')
+
+    assert info.duet_disabled
+    assert_equal 600, info.max_video_post_duration_sec
+  end
+
+  def test_tiktok_music_and_place_search_pass_the_query_through
+    transport.stub(:get, '/accounts/acc_1/tiktok/music',
+                   json: { 'data' => [{ 'id' => 'm1', 'title' => 'Sunrise', 'author' => 'Kite' }] })
+    transport.stub(:get, '/accounts/acc_1/tiktok/locations',
+                   json: { 'data' => [{ 'id' => 'p1', 'name' => 'Blue Bottle' }] })
+
+    tracks = client.accounts.search_tiktok_music('acc_1', q: 'sunrise', limit: 5)
+
+    assert_equal 'm1', tracks[0].id
+    assert_equal({ 'q' => 'sunrise', 'limit' => '5' }, transport.last.query)
+
+    places = client.accounts.search_tiktok_locations('acc_1', q: 'cafe')
+
+    assert_equal 'Blue Bottle', places[0].name
+  end
+
+  def test_tiktok_video_lookup_returns_the_address_a_repurpose_run_reads
+    transport.stub(:post, '/accounts/acc_1/tiktok/video-download',
+                   json: { 'data' => { 'video_id' => '7300000000000000000',
+                                       'download_url' => 'https://www.tiktok.com/@a/video/7300000000000000000' } })
+
+    video = client.accounts.lookup_tiktok_video('acc_1', 'https://www.tiktok.com/@a/video/7300000000000000000')
+
+    assert_equal '7300000000000000000', video.video_id
+    refute_nil video.download_url
+  end
+
+  def test_instagram_and_linkedin_reads
+    transport.stub(:get, '/accounts/acc_1/instagram/publishing-limit',
+                   json: { 'data' => { 'quota_usage' => 12, 'quota_total' => 50, 'remaining' => 38 } })
+    mention = { 'urn' => 'urn:li:organization:2414183', 'name' => 'Devtestco',
+                'annotation' => '@[Devtestco](urn:li:organization:2414183)' }
+    transport.stub(:get, '/accounts/acc_1/linkedin/mentions', json: { 'data' => [mention] })
+
+    assert_equal 38, client.accounts.get_instagram_publishing_limit('acc_1').remaining
+    mentions = client.accounts.search_linkedin_mentions('acc_1', 'devtestco')
+
+    assert_equal '@[Devtestco](urn:li:organization:2414183)', mentions[0].annotation
+  end
+
   def test_labels_list
     transport.stub(:get, '/labels', json: { 'data' => [LABEL_FIXTURE] })
 

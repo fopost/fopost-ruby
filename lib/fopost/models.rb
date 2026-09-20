@@ -142,6 +142,144 @@ module Fopost
     attribute :control
   end
 
+  # A Pinterest board; `id` travels as the `board_id` platform setting to pin to it.
+  class PinterestBoard < Model
+    attribute :id
+    attribute :name
+    attribute :privacy
+    attribute :description
+    attribute :image
+  end
+
+  # A playlist on the channel; `is_default` marks the one a new video joins by default.
+  class YouTubePlaylist < Model
+    attribute :id
+    attribute :title
+    attribute :description
+    attribute :privacy
+    attribute :item_count
+    attribute :thumbnail_url
+    attribute :is_default
+  end
+
+  # A caption track on one of the channel's videos.
+  class YouTubeCaptionTrack < Model
+    attribute :id
+    attribute :language
+    attribute :name
+    attribute :track_kind
+    attribute :is_draft
+    attribute :is_auto_synced
+    attribute :last_updated
+  end
+
+  # One caption track read back as text; `transcript` is SRT.
+  class YouTubeTranscript < Model
+    attribute :caption_id
+    attribute :transcript
+  end
+
+  # The default post languages for a connection; up to three BCP-47 tags.
+  class BlueskyLanguages < Model
+    attribute :languages
+  end
+
+  # The switches TikTok enforces at publish time, set on the account itself.
+  class TikTokCreatorInfo < Model
+    attribute :username
+    attribute :nickname
+    attribute :avatar_url
+    attribute :privacy_level_options
+    attribute :comment_disabled
+    attribute :duet_disabled
+    attribute :stitch_disabled
+    attribute :max_video_post_duration_sec
+  end
+
+  # A track from TikTok's Commercial Music Library; `id` travels as the
+  # `music_id` platform setting.
+  class TikTokMusic < Model
+    attribute :id
+    attribute :title
+    attribute :author
+    attribute :duration_sec
+    attribute :cover_url
+    attribute :preview_url
+  end
+
+  # A place a post can be tagged with; `id` travels as the `location_id`
+  # platform setting.
+  class TikTokPlace < Model
+    attribute :id
+    attribute :name
+    attribute :address
+    attribute :city
+    attribute :country
+  end
+
+  # One of the account's own videos, resolved from a share link. TikTok serves
+  # no raw media file, so `download_url` is the share address.
+  class TikTokVideoSource < Model
+    attribute :video_id
+    attribute :title
+    attribute :description
+    attribute :duration_sec
+    attribute :cover_image_url
+    attribute :share_url
+    attribute :embed_link
+    attribute :download_url
+  end
+
+  # A track a Reel can carry; `id` travels as the `audio_id` platform setting.
+  class InstagramAudio < Model
+    attribute :id
+    attribute :title
+    attribute :artist
+    attribute :duration_ms
+    attribute :audio_type
+    attribute :cover_artwork_url
+    attribute :preview_url
+    attribute :username
+    attribute :is_ads_eligible
+  end
+
+  # What this account has published in the rolling window, and what is left.
+  class InstagramPublishingLimit < Model
+    attribute :quota_usage
+    attribute :quota_total
+    attribute :quota_duration_sec
+    attribute :remaining
+  end
+
+  # A story still inside its 24 hours; `insights` is present only when asked for.
+  class InstagramStory < Model
+    attribute :id
+    attribute :media_type
+    attribute :media_product_type
+    attribute :permalink
+    attribute :media_url
+    attribute :thumbnail_url
+    attribute :caption
+    attribute :timestamp
+    attribute :insights
+  end
+
+  # Insights for one story.
+  class InstagramStoryInsights < Model
+    attribute :story_id
+    attribute :insights
+  end
+
+  # An entity a post can mention; `annotation` is what the post text carries.
+  class LinkedInMention < Model
+    attribute :urn
+    attribute :name
+    attribute :vanity_name
+    attribute :logo_url
+    attribute :type
+    attribute :annotation
+  end
+
   # A channel the Slack app can post to; `is_current` marks the one this account posts to.
   class SlackChannel < Model
     attribute :id

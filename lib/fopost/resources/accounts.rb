@@ -290,6 +290,119 @@ module Fopost
         nil
       end
 
+      # --- Per-network extras -------------------------------------
+
+      # Boards this Pinterest connection can pin to.
+      def list_pinterest_boards(account_id)
+        parse_list(PinterestBoard, unwrap(http.get("/accounts/#{account_id}/pinterest/boards")))
+      end
+
+      # `privacy` is PUBLIC, PROTECTED or SECRET.
+      def create_pinterest_board(account_id, name:, description: UNSET, privacy: UNSET)
+        body = compact_unset({ 'name' => name, 'description' => description, 'privacy' => privacy })
+        PinterestBoard.new(unwrap(http.post("/accounts/#{account_id}/pinterest/boards", body)))
+      end
+
+      # The channel's own playlists, with the stored default marked.
+      def list_youtube_playlists(account_id)
+        parse_list(YouTubePlaylist, unwrap(http.get("/accounts/#{account_id}/youtube/playlists")))
+      end
+
+      def create_youtube_playlist(account_id, title:, description: UNSET, privacy: UNSET)
+        body = compact_unset({ 'title' => title, 'description' => description, 'privacy' => privacy })
+        YouTubePlaylist.new(unwrap(http.post("/accounts/#{account_id}/youtube/playlists", body)))
+      end
+
+      # The playlist a new video joins when the post picks none; nil clears it.
+      def set_default_youtube_playlist(account_id, playlist_id)
+        data = unwrap(http.put("/accounts/#{account_id}/youtube/playlists/default",
+                               { 'playlist_id' => playlist_id }))
+        data.is_a?(Hash) ? data['playlist_id'] : nil
+      end
+
+      def list_youtube_captions(account_id, video_id)
+        parse_list(YouTubeCaptionTrack,
+                   unwrap(http.get("/accounts/#{account_id}/youtube/videos/#{video_id}/captions")))
+      end
+
+      # `body` is the subtitle file itself; YouTube reads SRT and WebVTT and sniffs which.
+      def upload_youtube_captions(account_id, video_id, language:, body:, name: UNSET, is_draft: UNSET)
+        payload = compact_unset({ 'language' => language, 'body' => body, 'name' => name,
+                                  'is_draft' => is_draft })
+        YouTubeCaptionTrack.new(
+          unwrap(http.post("/accounts/#{account_id}/youtube/videos/#{video_id}/captions", payload))
+        )
+      end
+
+      def read_youtube_transcript(account_id, caption_id)
+        YouTubeTranscript.new(unwrap(http.get("/accounts/#{account_id}/youtube/captions/#{caption_id}")))
+      end
+
+      # What a post from this connection is written in when it does not say.
+      def get_bluesky_languages(account_id)
+        BlueskyLanguages.new(unwrap(http.get("/accounts/#{account_id}/bluesky/languages")))
+      end
+
+      # Up to three BCP-47 tags; an empty list clears the default.
+      def set_bluesky_languages(account_id, languages)
+        BlueskyLanguages.new(
+          unwrap(http.put("/accounts/#{account_id}/bluesky/languages", { 'languages' => Array(languages) }))
+        )
+      end
+
+      # The switches TikTok enforces at publish time, changed in the TikTok app.
+      def get_tiktok_creator_info(account_id)
+        TikTokCreatorInfo.new(unwrap(http.get("/accounts/#{account_id}/tiktok/creator-info")))
+      end
+
+      # TikTok's Commercial Music Library. Needs the Marketing API product on
+      # the TikTok app; without it the call raises rather than answering empty.
+      def search_tiktok_music(account_id, q:, limit: nil)
+        params = { 'q' => q, 'limit' => limit }.compact
+        parse_list(TikTokMusic, unwrap(http.get("/accounts/#{account_id}/tiktok/music", params)))
+      end
+
+      # Places a post can be tagged with. Same TikTok product as the music library.
+      def search_tiktok_locations(account_id, q:, limit: nil)
+        params = { 'q' => q, 'limit' => limit }.compact
+        parse_list(TikTokPlace, unwrap(http.get("/accounts/#{account_id}/tiktok/locations", params)))
+      end
+
+      # Resolve a share link to one of this account's own videos, for repurposing.
+      def lookup_tiktok_video(account_id, url)
+        TikTokVideoSource.new(
+          unwrap(http.post("/accounts/#{account_id}/tiktok/video-download", { 'url' => url }))
+        )
+      end
+
+      # Tracks a Reel can carry; with no query Instagram answers with what is trending.
+      def search_instagram_audio(account_id, q: nil, audio_type: nil)
+        params = { 'q' => q, 'audio_type' => audio_type }.compact
+        parse_list(InstagramAudio, unwrap(http.get("/accounts/#{account_id}/instagram/audio", params)))
+      end
+
+      # How many posts are left before Instagram refuses the next one.
+      def get_instagram_publishing_limit(account_id)
+        InstagramPublishingLimit.new(unwrap(http.get("/accounts/#{account_id}/instagram/publishing-limit")))
+      end
+
+      # Stories still inside their 24 hours, posted through FoPost or not.
+      def list_instagram_stories(account_id, insights: nil)
+        params = insights.nil? ? {} : { 'insights' => insights }
+        parse_list(InstagramStory, unwrap(http.get("/accounts/#{account_id}/instagram/stories", params)))
+      end
+
+      def get_instagram_story_insights(account_id, story_id)
+        InstagramStoryInsights.new(
+          unwrap(http.get("/accounts/#{account_id}/instagram/stories/#{story_id}/insights"))
+        )
+      end
+
+      # Organizations a LinkedIn post can mention. People are not searchable.
+      def search_linkedin_mentions(account_id, q)
+        parse_list(LinkedInMention, unwrap(http.get("/accounts/#{account_id}/linkedin/mentions", { 'q' => q })))
+      end
+
       private
 
       # Symbol keys read the same as string keys on the way out to the API.

@@ -20,6 +20,18 @@ All notable changes to this gem are documented here. The format follows
   `app_id` is given (`inbox` scope, plus `publish`).
 - `accounts.list_slack_channels`, `list_slack_members`, `get_slack_identity` and `update_slack_identity`
   (`accounts` scope), with the `SlackChannel`, `SlackMember` and `SlackIdentity` models.
+- The Discord bot surface on `accounts` (`accounts` scope, plus `publish` for anything that
+  posts): `list_discord_channels`, `switch_discord_channel`, `get_discord_identity`,
+  `update_discord_identity`, `list_discord_pins`, `delete_discord_message`,
+  `pin_discord_message`, `unpin_discord_message`, `crosspost_discord_message`,
+  `create_discord_thread`, `send_discord_dm`, `list_discord_events`, `get_discord_event`,
+  `create_discord_event`, `update_discord_event`, `delete_discord_event`,
+  `list_discord_members`, `get_discord_member`, `list_discord_roles`, `create_discord_role`,
+  `update_discord_role`, `delete_discord_role`, `add_discord_member_role` and
+  `remove_discord_member_role`, with the `DiscordChannel`, `DiscordIdentity`,
+  `DiscordMessage`, `DiscordMessageRef`, `DiscordThread`, `DiscordScheduledEvent`,
+  `DiscordMember` and `DiscordRole` models. A webhook connection answers
+  `409 webhook_connection`.
 
 ## [0.3.0] - 2026-09-19
 

@@ -169,6 +169,92 @@ class ResourcesTest < Minitest::Test
     assert_equal 'webhook_connection', error.code
   end
 
+  def test_discord_channels_and_switch
+    channel = { 'id' => 'c2', 'name' => 'launches', 'type' => 0, 'parent_id' => nil,
+                'nsfw' => false, 'is_current' => true }
+    transport.stub(:get, '/accounts/acc_1/discord/channels', json: { 'data' => [channel] })
+    transport.stub(:patch, '/accounts/acc_1/discord/channels/current', json: { 'data' => channel })
+
+    channels = client.accounts.list_discord_channels('acc_1')
+
+    assert_equal 'c2', channels[0].id
+    assert channels[0].is_current
+
+    client.accounts.switch_discord_channel('acc_1', 'c2')
+
+    assert_equal({ 'channel_id' => 'c2' }, transport.last.json)
+  end
+
+  def test_discord_identity_partial_update
+    identity = { 'data' => { 'username' => 'Release Bot', 'avatar_url' => nil } }
+    transport.stub(:patch, '/accounts/acc_1/discord/identity', json: identity)
+
+    updated = client.accounts.update_discord_identity('acc_1', username: 'Release Bot')
+
+    assert_equal 'Release Bot', updated.username
+    # Omitted keywords stay off the wire, so Discord keeps them.
+    assert_equal({ 'username' => 'Release Bot' }, transport.last.json)
+  end
+
+  def test_discord_event_round_trip
+    event = { 'id' => 'e1', 'name' => 'Launch stream', 'description' => nil, 'channel_id' => nil,
+              'location' => 'https://example.com/live', 'start_time' => '2026-10-01T18:00:00.000Z',
+              'end_time' => '2026-10-01T19:00:00.000Z', 'status' => 'scheduled', 'user_count' => 0 }
+    transport.stub(:post, '/accounts/acc_1/discord/events', json: { 'data' => event })
+    transport.stub(:get, '/accounts/acc_1/discord/events', json: { 'data' => [event] })
+    transport.stub(:patch, '/accounts/acc_1/discord/events/e1',
+                   json: { 'data' => event.merge('status' => 'canceled') })
+    transport.stub(:delete, '/accounts/acc_1/discord/events/e1', json: { 'data' => { 'deleted' => true } })
+
+    created = client.accounts.create_discord_event('acc_1', name: 'Launch stream',
+                                                            start_time: '2026-10-01T18:00:00.000Z',
+                                                            end_time: '2026-10-01T19:00:00.000Z',
+                                                            location: 'https://example.com/live')
+
+    assert_equal 'e1', created.id
+    assert_equal({ 'name' => 'Launch stream', 'start_time' => '2026-10-01T18:00:00.000Z',
+                   'end_time' => '2026-10-01T19:00:00.000Z', 'location' => 'https://example.com/live' },
+                 transport.last.json)
+
+    assert_equal ['e1'], client.accounts.list_discord_events('acc_1').map(&:id)
+
+    updated = client.accounts.update_discord_event('acc_1', 'e1', status: 'canceled')
+
+    assert_equal 'canceled', updated.status
+    assert_equal({ 'status' => 'canceled' }, transport.last.json)
+
+    assert_nil client.accounts.delete_discord_event('acc_1', 'e1')
+  end
+
+  def test_discord_members_roles_and_dm
+    member = { 'id' => 'u7', 'username' => 'ada', 'is_bot' => false, 'roles' => ['r1'] }
+    transport.stub(:get, '/accounts/acc_1/discord/members', json: { 'data' => [member] })
+    transport.stub(:put, '/accounts/acc_1/discord/roles/r1/members/u7', json: { 'data' => { 'assigned' => true } })
+    transport.stub(:post, '/accounts/acc_1/discord/dm', json: { 'data' => { 'id' => 'm1', 'channel_id' => 'dm1' } })
+
+    members = client.accounts.list_discord_members('acc_1', query: 'ada')
+
+    assert_equal 'u7', members[0].id
+    assert_equal({ 'q' => 'ada' }, transport.last.query)
+
+    assert_nil client.accounts.add_discord_member_role('acc_1', 'r1', 'u7')
+
+    sent = client.accounts.send_discord_dm('acc_1', 'u7', 'hi')
+
+    assert_equal 'dm1', sent.channel_id
+    assert_equal({ 'member_id' => 'u7', 'content' => 'hi' }, transport.last.json)
+  end
+
+  def test_discord_webhook_connection_raises_with_its_code
+    body = { 'error' => 'webhook_connection', 'message' => 'Upgrade it to the bot first' }
+    transport.stub(:get, '/accounts/acc_1/discord/channels', status: 409, json: body)
+
+    error = assert_raises(Fopost::Error) { client.accounts.list_discord_channels('acc_1') }
+
+    assert_equal 409, error.status
+    assert_equal 'webhook_connection', error.code
+  end
+
   def test_labels_list
     transport.stub(:get, '/labels', json: { 'data' => [LABEL_FIXTURE] })
 

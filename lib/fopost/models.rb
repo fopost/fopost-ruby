@@ -87,6 +87,61 @@ module Fopost
     attribute :commands, [TelegramBotCommand]
   end
 
+  # A tappable prompt Messenger or Instagram shows before the first message.
+  class MetaIceBreaker < Model
+    attribute :question
+    attribute :payload
+  end
+
+  # The ice breakers set on one account.
+  class MetaIceBreakers < Model
+    attribute :ice_breakers, [MetaIceBreaker]
+  end
+
+  # A menu item: a `postback` with a payload, or a `web_url` with a link.
+  class MetaMenuItem < Model
+    attribute :type
+    attribute :title
+    attribute :payload
+    attribute :url
+  end
+
+  # One locale's menu; `default` is the fallback every language uses.
+  class MetaPersistentMenuEntry < Model
+    attribute :locale
+    attribute :call_to_actions, [MetaMenuItem]
+    attribute :composer_input_disabled
+  end
+
+  # The persistent menu set on one account, one entry per locale.
+  class MetaPersistentMenu < Model
+    attribute :persistent_menu, [MetaPersistentMenuEntry]
+  end
+
+  # One locale's greeting, up to 160 characters.
+  class MetaGreetingText < Model
+    attribute :locale
+    attribute :text
+  end
+
+  # The greeting set on one account, one entry per locale.
+  class MetaGreeting < Model
+    attribute :greeting, [MetaGreetingText]
+  end
+
+  # What the network delivers to the FoPost webhook for one account.
+  class WebhookSubscription < Model
+    attribute :subscribed
+    attribute :fields
+    attribute :missing_fields
+  end
+
+  # The outcome of a Messenger thread hand-over; `app_id` is nil when control was taken back.
+  class InboxHandover < Model
+    attribute :app_id
+    attribute :control
+  end
+
   # A channel the Slack app can post to; `is_current` marks the one this account posts to.
   class SlackChannel < Model
     attribute :id

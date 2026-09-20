@@ -81,6 +81,73 @@ module Fopost
         SlackIdentity.new(unwrap(http.request(:patch, "/accounts/#{account_id}/slack/identity", json: body)))
       end
 
+      # ── Meta messaging settings (Facebook Pages, Instagram) ──────
+
+      # The prompts shown before the first message; networks without them answer 400.
+      def get_ice_breakers(account_id)
+        MetaIceBreakers.new(unwrap(http.get("/accounts/#{account_id}/messaging/ice-breakers")))
+      end
+
+      # Replace the ice breakers, up to four; each entry has `question` and `payload`.
+      def set_ice_breakers(account_id, ice_breakers)
+        body = {
+          'ice_breakers' => ice_breakers.map do |entry|
+            { 'question' => entry[:question] || entry['question'],
+              'payload' => entry[:payload] || entry['payload'] }
+          end
+        }
+        MetaIceBreakers.new(unwrap(http.put("/accounts/#{account_id}/messaging/ice-breakers", body)))
+      end
+
+      def delete_ice_breakers(account_id)
+        MetaIceBreakers.new(unwrap(http.delete("/accounts/#{account_id}/messaging/ice-breakers")))
+      end
+
+      # The always-visible Messenger menu. Facebook Pages only.
+      def get_persistent_menu(account_id)
+        MetaPersistentMenu.new(unwrap(http.get("/accounts/#{account_id}/messaging/persistent-menu")))
+      end
+
+      # Replace the menu, one entry per locale, up to three items each.
+      def set_persistent_menu(account_id, menu)
+        body = { 'persistent_menu' => menu.map { |entry| stringify(entry) } }
+        MetaPersistentMenu.new(unwrap(http.put("/accounts/#{account_id}/messaging/persistent-menu", body)))
+      end
+
+      def delete_persistent_menu(account_id)
+        MetaPersistentMenu.new(unwrap(http.delete("/accounts/#{account_id}/messaging/persistent-menu")))
+      end
+
+      # The text shown before a Messenger conversation starts. Facebook Pages only.
+      def get_greeting(account_id)
+        MetaGreeting.new(unwrap(http.get("/accounts/#{account_id}/messaging/greeting")))
+      end
+
+      # Replace the greeting, one entry per locale, each up to 160 characters.
+      def set_greeting(account_id, greeting)
+        body = {
+          'greeting' => greeting.map do |entry|
+            { 'locale' => entry[:locale] || entry['locale'] || 'default',
+              'text' => entry[:text] || entry['text'] }
+          end
+        }
+        MetaGreeting.new(unwrap(http.put("/accounts/#{account_id}/messaging/greeting", body)))
+      end
+
+      def delete_greeting(account_id)
+        MetaGreeting.new(unwrap(http.delete("/accounts/#{account_id}/messaging/greeting")))
+      end
+
+      # What the network is delivering to the FoPost webhook for this account.
+      def get_webhook_subscription(account_id)
+        WebhookSubscription.new(unwrap(http.get("/accounts/#{account_id}/webhook-subscription")))
+      end
+
+      # Subscribe to every field this account needs, lapsed or not.
+      def resubscribe_webhook(account_id)
+        WebhookSubscription.new(unwrap(http.post("/accounts/#{account_id}/webhook-subscription")))
+      end
+
       # ── Discord (bot connections; a webhook one answers 409 webhook_connection) ──
 
       # Text channels the bot can post to in the connected server.
@@ -224,6 +291,15 @@ module Fopost
       end
 
       private
+
+      # Symbol keys read the same as string keys on the way out to the API.
+      def stringify(value)
+        case value
+        when Hash then value.to_h { |k, v| [k.to_s, stringify(v)] }
+        when Array then value.map { |v| stringify(v) }
+        else value
+        end
+      end
 
       def discord_role_body(name, color, hoist, mentionable, permissions)
         compact_nil({

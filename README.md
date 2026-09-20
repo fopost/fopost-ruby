@@ -144,6 +144,18 @@ client.accounts.list_slack_channels(account_id)
 client.accounts.list_slack_members(account_id)
 client.accounts.get_slack_identity(account_id)
 client.accounts.update_slack_identity(account_id, username: 'Launch Bot', icon_emoji: ':rocket:')   # nil clears
+
+# Meta messaging settings. Ice breakers on Facebook Pages and Instagram; the menu and
+# greeting on Pages only. A network without a field answers 400.
+client.accounts.set_ice_breakers(account_id, [{ question: 'What are your hours?', payload: 'HOURS' }])
+client.accounts.set_persistent_menu(account_id, [{ locale: 'default',
+                                                   call_to_actions: [{ type: 'postback', title: 'Talk to Us',
+                                                                       payload: 'HUMAN' }] }])
+client.accounts.set_greeting(account_id, [{ text: 'Hi! Ask us anything.' }])
+
+# Is the network still delivering events for this account?
+subscription = client.accounts.get_webhook_subscription(account_id)
+client.accounts.resubscribe_webhook(account_id) unless subscription.subscribed
 ```
 
 On a Discord bot connection, read and change the channel it posts to and manage the server itself:
@@ -262,6 +274,10 @@ client.inbox.reply(item.id, media_ids: [media.id], quick_replies: %w[Yes No])
 client.inbox.start_conversation(account_id: account.id, handle: 'jordanvale', text: 'Hi!')
 client.inbox.start_conversation(comment_id: item.id, text: 'Sent you the details')
 client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
+
+# Messenger hand-over: pass the thread to another Meta app, or take it back with no app id.
+client.inbox.handover(item.conversation_id, account_id: item.account.id, app_id: '263902037430900')
+client.inbox.handover(item.conversation_id, account_id: item.account.id)
 ```
 
 ## Ads

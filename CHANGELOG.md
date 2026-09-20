@@ -8,6 +8,10 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `InboxItem#moderation_status` carries the platform's own state for a comment
+  (`published`, `held`, `spam`, `rejected`), and `InboxAccount#reconnect_required`
+  flags an account connected before the inbox asked for a permission it needs.
+
 - `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).
 - `accounts.list_slack_channels`, `list_slack_members`, `get_slack_identity` and `update_slack_identity`

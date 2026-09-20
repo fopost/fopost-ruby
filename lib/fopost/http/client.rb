@@ -76,6 +76,10 @@ module Fopost
         request(:put, path, json: json)
       end
 
+      def patch(path, json = nil)
+        request(:patch, path, json: json)
+      end
+
       def delete(path, json = nil)
         request(:delete, path, json: json)
       end

@@ -280,6 +280,40 @@ client.inbox.handover(item.conversation_id, account_id: item.account.id, app_id:
 client.inbox.handover(item.conversation_id, account_id: item.account.id)
 ```
 
+## Knowledge
+
+What the workspace has told FoPost about itself. Retrieval over these sources
+is what grounds a drafted inbox reply in your own answers instead of an
+invented one. Needs the `inbox` scope.
+
+```ruby
+# A source is an FAQ, a note, a page on your own site, or a plain-text/CSV
+# media item. Adding one queues it for indexing, so it comes back `pending`.
+faq = client.knowledge.create(
+  kind: 'faq',
+  title: 'Refunds and returns',
+  content: "Q: How long do refunds take?\nA: Up to 30 days from the request.",
+  workspace_id: workspace.id,
+)
+page = client.knowledge.create(kind: 'url', title: 'Shipping', url: 'https://yourbrand.com/shipping')
+
+client.knowledge.list(workspace_id: workspace.id).each do |source|
+  puts "#{source.title} #{source.status} #{source.chunk_count}"
+end
+
+# Editing the text or the URL re-indexes the source on its own; a page you
+# changed on your own site needs an explicit re-read.
+client.knowledge.update(faq.id, title: 'Refunds')
+client.knowledge.sync(page.id)
+client.knowledge.delete(page.id)
+
+# Empty is the honest answer when nothing stored answers the question.
+client.knowledge.search('how long do refunds take?', top_k: 3).each do |match|
+  puts "#{match.source_title}: #{match.text}"
+end
+```
+
+
 ## Ads
 
 Meta ads, campaigns, creatives, audiences, insights and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.

@@ -2,12 +2,12 @@
 
 module Fopost
   module Resources
-    # `client.inbox` — comments, mentions and direct messages on connected
+    # `client.inbox` — comments, mentions, reviews and direct messages on connected
     # accounts. Every method needs the `inbox` scope.
     class Inbox < Base
       # One page of items, newest first. The result is Enumerable over its items.
       #
-      # `type` is comment, mention or dm; `state` is unread, read, resolved or
+      # `type` is comment, mention, review or dm; `state` is unread, read, resolved or
       # snoozed; `sort` is newest, oldest or unanswered.
       def list(workspace_id: nil, type: nil, state: nil, platform: nil, account_id: nil, post_id: nil,
                post_external_id: nil, conversation_id: nil, direction: nil, q: nil, sort: nil,
@@ -34,7 +34,8 @@ module Fopost
       end
 
       # One row per post with comments; `kind: 'mentions'` for posts the
-      # account was tagged in.
+      # account was tagged in, `kind: 'reviews'` for one row per review left
+      # on the business, each carrying its rating.
       def threads(workspace_id: nil, kind: nil, platform: nil, account_id: nil, state: nil, q: nil,
                   sort: nil, page: 1, per_page: 25)
         body = http.get(
@@ -179,6 +180,14 @@ module Fopost
       def set_typing(conversation_id, account_id:, on: true)
         body = { 'account_id' => account_id, 'on' => on }
         as_hash(unwrap(http.post("/inbox/conversations/#{conversation_id}/typing", body)))['typing']
+      end
+
+      # Pass a Messenger thread to another Meta app, or take it back without an `app_id`.
+      def handover(conversation_id, account_id:, app_id: nil, metadata: nil)
+        body = { 'account_id' => account_id }
+        body['app_id'] = app_id unless app_id.nil?
+        body['metadata'] = metadata unless metadata.nil?
+        InboxHandover.new(unwrap(http.post("/inbox/conversations/#{conversation_id}/handover", body)))
       end
 
       # Replies an automation or the agent drafted that a person still has to send.

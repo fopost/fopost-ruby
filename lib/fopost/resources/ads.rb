@@ -2,13 +2,20 @@
 
 module Fopost
   module Resources
-    # `client.ads` — Meta ads, catalogs, audiences, the ad archive and lead forms.
+    # `client.ads` — ads, catalogs, audiences, the ad archive and lead forms.
+    #
+    # Meta is what this resource covers; the Google-only surface is `client.ads.google`.
     #
     # Every method needs the `ads` scope. {#boost}, {#create}, {#set_status}
     # and {#delete} spend money and also need `publish`, as do the create,
     # update, delete and duplicate methods for campaigns, ad sets and network
     # ads, and {#bulk_set_status}.
     class Ads < Base
+      # The Search surface no other network has: keywords, assets, conversions, GAQL.
+      def google
+        @google ||= GoogleAds.new(http)
+      end
+
       # Boosts and ads created through FoPost, with insights from their last refresh.
       def list(workspace_id: nil)
         parse_list(Ad, unwrap(http.get('/ads', { 'workspace_id' => workspace_id })))
@@ -37,6 +44,14 @@ module Fopost
       def authorize_meta(workspace_id:, method: nil, return_to: nil)
         body = compact_nil('workspaceId' => workspace_id, 'method' => method, 'returnTo' => return_to)
         result = unwrap(http.post('/ads/connections/meta/authorize', body))
+        url = result.is_a?(Hash) ? result['url'] : nil
+        url.nil? ? '' : url.to_s
+      end
+
+      # The Google login URL; the caller finishes it in their own browser.
+      def authorize_google(workspace_id:, return_to: nil)
+        body = compact_nil('workspaceId' => workspace_id, 'returnTo' => return_to)
+        result = unwrap(http.post('/ads/connections/google/authorize', body))
         url = result.is_a?(Hash) ? result['url'] : nil
         url.nil? ? '' : url.to_s
       end

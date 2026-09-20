@@ -873,6 +873,194 @@ module Fopost
     attribute :url_tags
   end
 
+  # ─── Product catalogs ──────────────────────────────────────────
+
+  # A product catalog on the connection's business portfolio, read live.
+  class ProductCatalog < Model
+    attribute :id
+    attribute :name
+    attribute :vertical
+    attribute :product_count
+  end
+
+  class ProductCatalogsResult < Model
+    attribute :catalogs, [ProductCatalog]
+    attribute :workspace_id
+  end
+
+  # One product in a catalog. `price_minor` is minor units of `currency`.
+  class CatalogProduct < Model
+    attribute :id
+    # Your own key for the product.
+    attribute :retailer_id
+    attribute :name
+    attribute :description
+    attribute :availability
+    attribute :condition
+    attribute :price_minor
+    attribute :currency
+    attribute :image_url
+    attribute :url
+  end
+
+  class CatalogProductsPage < Model
+    attribute :products, [CatalogProduct]
+    attribute :next_cursor
+  end
+
+  class CatalogBatchResult < Model
+    attribute :handles
+    # Products sent in this batch.
+    attribute :accepted
+  end
+
+  # Keeps a catalog in step with a product file you host.
+  class ProductFeed < Model
+    attribute :id
+    attribute :name
+    attribute :url
+    attribute :schedule
+    attribute :created_at, :time
+  end
+
+  class ProductFeedUpload < Model
+    attribute :id
+    attribute :started_at, :time
+    attribute :ended_at, :time
+    attribute :status
+    attribute :error_count
+    attribute :warning_count
+  end
+
+  # The slice of a catalog one catalog ad runs from.
+  class ProductSet < Model
+    attribute :id
+    attribute :name
+    attribute :product_count
+    # The network's own product-set filter.
+    attribute :filter
+  end
+
+  # ─── Reach and frequency ───────────────────────────────────────
+
+  # A priced flight. Nothing is bought until it is reserved.
+  class ReachFrequencyPrediction < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :reach
+    attribute :impressions
+    attribute :frequency_cap
+    # Account currency, minor units.
+    attribute :budget_minor
+    attribute :start_at, :time
+    attribute :end_at, :time
+    # True once the prediction holds inventory.
+    attribute :reserved
+  end
+
+  class ReachFrequencyResult < Model
+    attribute :predictions, [ReachFrequencyPrediction]
+    attribute :workspace_id
+  end
+
+  # ─── Ad Library ────────────────────────────────────────────────
+
+  # One public archive entry. Read live on every search and stored nowhere.
+  class AdLibraryEntry < Model
+    attribute :id
+    attribute :page_id
+    attribute :page_name
+    attribute :bodies
+    attribute :titles
+    attribute :link_urls
+    attribute :snapshot_url
+    attribute :publisher_platforms
+    attribute :started_at, :time
+    attribute :ended_at, :time
+    # Only on the archive's disclosure entries.
+    attribute :currency
+    attribute :spend_lower
+    attribute :spend_upper
+    attribute :impressions_lower
+    attribute :impressions_upper
+  end
+
+  class AdLibraryPage < Model
+    attribute :entries, [AdLibraryEntry]
+    attribute :next_cursor
+  end
+
+  # ─── Partnership ads ───────────────────────────────────────────
+
+  # A creator who allowlisted this advertiser for partnership ads.
+  class PartnershipCreator < Model
+    attribute :id
+    attribute :username
+    attribute :name
+    attribute :status
+    attribute :permissions
+  end
+
+  # ─── Ad account settings ───────────────────────────────────────
+
+  class AdActivity < Model
+    attribute :id
+    attribute :event_type
+    attribute :actor_name
+    attribute :object_name
+    attribute :object_type
+    attribute :extra_data
+    attribute :created_at, :time
+  end
+
+  class AdActivityResult < Model
+    attribute :activity, [AdActivity]
+    attribute :workspace_id
+  end
+
+  # Groups campaigns, ad sets and ads for reporting.
+  class AdLabel < Model
+    attribute :id
+    attribute :name
+    attribute :created_at, :time
+  end
+
+  # An A/B study splitting traffic across its cells.
+  class AdStudy < Model
+    attribute :id
+    attribute :name
+    attribute :description
+    attribute :type
+    attribute :status
+    attribute :start_at, :time
+    attribute :end_at, :time
+  end
+
+  # How many iOS 14 campaigns an ad account may run at once, per app.
+  class IosCampaignLimits < Model
+    attribute :limit
+    attribute :used
+    attribute :app_id
+  end
+
+  # A window the network should expect heavier spend over.
+  class HighDemandPeriod < Model
+    attribute :id
+    attribute :start_at, :time
+    attribute :end_at, :time
+    attribute :budget_value
+    attribute :budget_value_type
+  end
+
+  # Weights conversions so some audiences count for more than others.
+  class ValueRuleSet < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :rules
+  end
+
   class ReachEstimate < Model
     attribute :lower
     attribute :upper

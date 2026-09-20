@@ -480,6 +480,12 @@ page = client.ads.leads_feed(workspace_id: workspace.id, cursor: page.next_curso
 | Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `estimate_reach` |
 | Insights | `insights`, `ad_insights` |
 | Leads | `get_lead_form`, `archive_lead_form`, `leads_feed`, `lead_pages`, `subscribe_lead_page`, `unsubscribe_lead_page` |
+| Goals | `goals` |
+| Catalogs | `catalogs`, `create_catalog`, `catalog`, `update_catalog`, `delete_catalog`, `catalog_products`, `write_catalog_products`, `product_feeds`, `create_product_feed`, `delete_product_feed`, `feed_uploads`, `start_feed_upload`, `product_sets`, `create_product_set`, `update_product_set`, `delete_product_set` |
+| Reach and frequency | `reach_frequency`, `create_reach_frequency`, `reach_frequency_prediction`, `reserve_reach_frequency`, `cancel_reach_frequency` |
+| Ad Library | `library` |
+| Partnership ads | `partnership_creators`, `request_partnership`, `revoke_partnership` |
+| Account settings | `account_activity`, `labels`, `create_label`, `update_label`, `delete_label`, `apply_label`, `studies`, `create_study`, `study`, `delete_study`, `ios_campaign_limits`, `high_demand_periods`, `create_high_demand_period`, `delete_high_demand_period`, `value_rule_sets`, `create_value_rule_set`, `delete_value_rule_set` |
 
 ## Media
 

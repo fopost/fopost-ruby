@@ -557,8 +557,21 @@ module Fopost
   end
 
   # A connection with the ad accounts and Pages its grant reaches.
+  # An ad network from the API's registry. `configured` false cannot be connected yet.
+  class AdProvider < Model
+    attribute :id
+    attribute :name
+    attribute :logo
+    attribute :configured
+    attribute :connect_methods
+    attribute :capabilities
+    attribute :targeting_facets
+    attribute :tracking_macros
+  end
+
   class AdSource < Model
     attribute :connection_id
+    attribute :provider
     attribute :name
     attribute :workspace_id
     attribute :ad_accounts
@@ -702,6 +715,70 @@ module Fopost
     attribute :lower
     attribute :upper
     attribute :ready
+  end
+
+  # What the auction costs, in minor units of the ad account currency.
+  class BidPricing < Model
+    attribute :currency
+    attribute :suggested_bid_minor
+    attribute :min_bid_minor
+    attribute :max_bid_minor
+    attribute :daily_budget_floor_minor
+  end
+
+  # What an audience would deliver at a budget, over the network's own window.
+  class SupplyForecast < Model
+    attribute :currency
+    attribute :impressions
+    attribute :clicks
+    attribute :spend_minor
+    attribute :window_days
+    attribute :ready
+  end
+
+  # How the network attributes a sale or a sign-up back to an ad set.
+  class ConversionRule < Model
+    attribute :id
+    attribute :name
+    attribute :type
+    attribute :attribution
+    attribute :post_click_window_days
+    attribute :view_through_window_days
+    attribute :value_minor
+    attribute :currency
+    attribute :enabled
+    attribute :created_at
+    attribute :campaign_ids
+  end
+
+  class ConversionMetrics < Model
+    attribute :conversions
+    attribute :post_click_conversions
+    attribute :view_through_conversions
+    attribute :value_minor
+    attribute :cost_per_conversion_minor
+  end
+
+  # A public ad from the network's own library, never a connection's own data.
+  class AdLibraryAd < Model
+    attribute :id
+    attribute :advertiser_name
+    attribute :advertiser_url
+    attribute :headline
+    attribute :body
+    attribute :type
+    attribute :thumbnail_url
+    attribute :first_impression_at
+    attribute :last_impression_at
+    attribute :countries
+    attribute :details_url
+    attribute :payer
+    attribute :impressions_range
+  end
+
+  class AdLibraryPage < Model
+    attribute :ads
+    attribute :next_cursor
   end
 
   # `spend_minor` is in the ad account currency, minor units; `ctr` is a percentage.

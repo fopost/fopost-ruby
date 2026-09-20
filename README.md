@@ -248,10 +248,10 @@ client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
 
 ## Ads
 
-Meta ads, campaigns, creatives, audiences, insights and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
+Ads, campaigns, creatives, audiences, insights and lead forms on a connected network. `providers` lists the networks a deployment knows and what each supports. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
 
 ```ruby
-url = client.ads.authorize_meta(workspace_id: workspace.id)   # finish the Meta login in a browser
+url = client.ads.authorize('meta', workspace_id: workspace.id)   # finish the login in a browser
 source = client.ads.sources(workspace_id: workspace.id).first
 
 ad = client.ads.boost(
@@ -311,7 +311,11 @@ page = client.ads.leads_feed(workspace_id: workspace.id, cursor: page.next_curso
 | Ad sets | `create_ad_set`, `get_ad_set`, `update_ad_set`, `delete_ad_set`, `duplicate_ad_set` |
 | Network ads | `create_network_ad`, `get_network_ad`, `update_network_ad`, `delete_network_ad`, `duplicate_network_ad`, `bulk_set_status` |
 | Creatives | `creatives`, `create_creative`, `get_creative`, `delete_creative` |
-| Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `estimate_reach` |
+| Networks | `providers`, `authorize` |
+| Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `add_audience_companies`, `estimate_reach` |
+| Forecasts | `bid_pricing`, `supply_forecast` |
+| Conversions | `conversion_rules`, `create_conversion_rule`, `get_conversion_rule`, `update_conversion_rule`, `delete_conversion_rule`, `attach_conversion_rule`, `detach_conversion_rule`, `conversion_metrics`, `send_conversion_events` |
+| Ad library | `ad_library` |
 | Insights | `insights`, `ad_insights` |
 | Leads | `get_lead_form`, `archive_lead_form`, `leads_feed`, `lead_pages`, `subscribe_lead_page`, `unsubscribe_lead_page` |
 

@@ -56,6 +56,17 @@ All notable changes to this gem are documented here. The format follows
 - `DiscordChannel#can_post` says whether the bot may actually post in a channel;
   a channel permission in Discord can shut it out. `switch_discord_channel` answers
   `409 channel_not_writable` for one.
+- Per-network extras on `accounts`, all `accounts` scope: Pinterest boards
+  (`list_pinterest_boards`, `create_pinterest_board`), YouTube playlists and captions
+  (`list_youtube_playlists`, `create_youtube_playlist`, `set_default_youtube_playlist`,
+  `list_youtube_captions`, `upload_youtube_captions`, `read_youtube_transcript`), Bluesky post
+  languages (`get_bluesky_languages`, `set_bluesky_languages`), TikTok creator info
+  (`get_tiktok_creator_info`), TikTok music and place search plus video lookup
+  (`search_tiktok_music`, `search_tiktok_locations`, `lookup_tiktok_video`),
+  Instagram audio, publishing limit and stories
+  (`search_instagram_audio`, `get_instagram_publishing_limit`, `list_instagram_stories`,
+  `get_instagram_story_insights`) and LinkedIn mentions (`search_linkedin_mentions`), with a
+  model each.
 
 ## [0.3.0] - 2026-09-19
 

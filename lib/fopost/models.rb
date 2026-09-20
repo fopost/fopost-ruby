@@ -87,6 +87,61 @@ module Fopost
     attribute :commands, [TelegramBotCommand]
   end
 
+  # A tappable prompt Messenger or Instagram shows before the first message.
+  class MetaIceBreaker < Model
+    attribute :question
+    attribute :payload
+  end
+
+  # The ice breakers set on one account.
+  class MetaIceBreakers < Model
+    attribute :ice_breakers, [MetaIceBreaker]
+  end
+
+  # A menu item: a `postback` with a payload, or a `web_url` with a link.
+  class MetaMenuItem < Model
+    attribute :type
+    attribute :title
+    attribute :payload
+    attribute :url
+  end
+
+  # One locale's menu; `default` is the fallback every language uses.
+  class MetaPersistentMenuEntry < Model
+    attribute :locale
+    attribute :call_to_actions, [MetaMenuItem]
+    attribute :composer_input_disabled
+  end
+
+  # The persistent menu set on one account, one entry per locale.
+  class MetaPersistentMenu < Model
+    attribute :persistent_menu, [MetaPersistentMenuEntry]
+  end
+
+  # One locale's greeting, up to 160 characters.
+  class MetaGreetingText < Model
+    attribute :locale
+    attribute :text
+  end
+
+  # The greeting set on one account, one entry per locale.
+  class MetaGreeting < Model
+    attribute :greeting, [MetaGreetingText]
+  end
+
+  # What the network delivers to the FoPost webhook for one account.
+  class WebhookSubscription < Model
+    attribute :subscribed
+    attribute :fields
+    attribute :missing_fields
+  end
+
+  # The outcome of a Messenger thread hand-over; `app_id` is nil when control was taken back.
+  class InboxHandover < Model
+    attribute :app_id
+    attribute :control
+  end
+
   # A channel the Slack app can post to; `is_current` marks the one this account posts to.
   class SlackChannel < Model
     attribute :id
@@ -111,6 +166,87 @@ module Fopost
     attribute :username
     attribute :icon_url
     attribute :icon_emoji
+  end
+
+  # A Discord text channel the bot can post to; `is_current` marks this account's.
+  class DiscordChannel < Model
+    attribute :id
+    attribute :name
+    # Discord's channel type: 0 text, 5 announcement, 15 forum.
+    attribute :type
+    attribute :parent_id
+    attribute :nsfw
+    attribute :is_current
+  end
+
+  # The nickname and avatar the bot wears in the server; nil means its own.
+  class DiscordIdentity < Model
+    attribute :username
+    attribute :avatar_url
+  end
+
+  # A message in the connected channel.
+  class DiscordMessage < Model
+    attribute :id
+    attribute :channel_id
+    attribute :content
+    attribute :author_id
+    attribute :author_name
+    attribute :pinned
+    attribute :created_at
+  end
+
+  # A message the bot put somewhere.
+  class DiscordMessageRef < Model
+    attribute :id
+    attribute :channel_id
+  end
+
+  # A thread started on a message.
+  class DiscordThread < Model
+    attribute :id
+    attribute :name
+    attribute :parent_id
+  end
+
+  # An event on the server's calendar; `channel_id` is a voice or stage channel,
+  # otherwise `location` says where it happens.
+  class DiscordScheduledEvent < Model
+    attribute :id
+    attribute :name
+    attribute :description
+    attribute :channel_id
+    attribute :location
+    attribute :start_time
+    attribute :end_time
+    # One of scheduled, active, completed, canceled.
+    attribute :status
+    attribute :user_count
+  end
+
+  # A person in the connected server; `id` is the member id for a DM or a role.
+  class DiscordMember < Model
+    attribute :id
+    attribute :username
+    attribute :display_name
+    attribute :nick
+    attribute :avatar
+    attribute :is_bot
+    attribute :roles
+    attribute :joined_at
+  end
+
+  # A role in the connected server; `permissions` is Discord's bitfield as a decimal string.
+  class DiscordRole < Model
+    attribute :id
+    attribute :name
+    attribute :color
+    attribute :hoist
+    attribute :mentionable
+    # A managed role belongs to an integration and cannot be edited.
+    attribute :managed
+    attribute :position
+    attribute :permissions
   end
 
   # A named set of connected accounts in one workspace.
@@ -457,6 +593,43 @@ module Fopost
     attribute :dm_supported
     attribute :dm_pending_reason
     attribute :can_start_conversation
+  end
+
+  # One thing the workspace has told FoPost about itself: an FAQ, a note, a page
+  # on its own site, or a plain-text/CSV file from the media library.
+  class KnowledgeSource < Model
+    attribute :id
+    # `faq`, `text`, `url` or `file`.
+    attribute :kind
+    attribute :title
+    # Only a `ready` source is searched.
+    attribute :status
+    # Why the last sync failed, in plain words.
+    attribute :status_message
+    # Set for `url` sources.
+    attribute :url
+    # Set for `file` sources: the media library item read.
+    attribute :media_id
+    # nil means the source serves the whole workspace.
+    attribute :brand_voice_id
+    # Searchable passages the last sync produced.
+    attribute :chunk_count
+    # The typed text, for `faq` and `text` sources only.
+    attribute :content
+    attribute :last_synced_at, :time
+    attribute :created_at, :time
+    attribute :updated_at, :time
+  end
+
+  # One retrieved passage, with the source it came from so a reply can cite it.
+  class KnowledgeMatch < Model
+    attribute :source_id
+    attribute :source_title
+    attribute :source_kind
+    attribute :source_url
+    attribute :text
+    # Similarity to the question, 0-1.
+    attribute :score
   end
 
   class InboxPlatform < Model

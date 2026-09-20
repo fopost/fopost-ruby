@@ -595,6 +595,43 @@ module Fopost
     attribute :can_start_conversation
   end
 
+  # One thing the workspace has told FoPost about itself: an FAQ, a note, a page
+  # on its own site, or a plain-text/CSV file from the media library.
+  class KnowledgeSource < Model
+    attribute :id
+    # `faq`, `text`, `url` or `file`.
+    attribute :kind
+    attribute :title
+    # Only a `ready` source is searched.
+    attribute :status
+    # Why the last sync failed, in plain words.
+    attribute :status_message
+    # Set for `url` sources.
+    attribute :url
+    # Set for `file` sources: the media library item read.
+    attribute :media_id
+    # nil means the source serves the whole workspace.
+    attribute :brand_voice_id
+    # Searchable passages the last sync produced.
+    attribute :chunk_count
+    # The typed text, for `faq` and `text` sources only.
+    attribute :content
+    attribute :last_synced_at, :time
+    attribute :created_at, :time
+    attribute :updated_at, :time
+  end
+
+  # One retrieved passage, with the source it came from so a reply can cite it.
+  class KnowledgeMatch < Model
+    attribute :source_id
+    attribute :source_title
+    attribute :source_kind
+    attribute :source_url
+    attribute :text
+    # Similarity to the question, 0-1.
+    attribute :score
+  end
+
   class InboxPlatform < Model
     attribute :platform
     attribute :comments

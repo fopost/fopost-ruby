@@ -781,4 +781,107 @@ module Fopost
     attribute :created_at, :time
     attribute :workspace_id
   end
+  # ─── Google Ads ───────────────────────────────────────────────────
+
+  # A keyword on an ad group. `id` is `<customer_id>~keyword~<ad_group_id>~<criterion_id>`.
+  class GoogleKeyword < Model
+    attribute :id
+    attribute :ad_group_id
+    attribute :text
+    attribute :match_type
+    attribute :status
+    # Account currency, minor units.
+    attribute :cpc_bid_minor
+    attribute :negative
+  end
+
+  class GoogleKeywordIdea < Model
+    attribute :text
+    attribute :avg_monthly_searches
+    attribute :competition
+    attribute :low_top_of_page_bid_minor
+    attribute :high_top_of_page_bid_minor
+  end
+
+  class GoogleSearchTerm < Model
+    attribute :term
+    attribute :ad_group_id
+    attribute :status
+    attribute :metrics
+  end
+
+  class GoogleBidStrategy < Model
+    attribute :id
+    attribute :name
+    attribute :type
+    attribute :status
+    attribute :campaign_count
+  end
+
+  class GoogleAdScheduleSlot < Model
+    attribute :id
+    attribute :day_of_week
+    attribute :start_hour
+    attribute :end_hour
+    attribute :bid_modifier
+  end
+
+  # A negative keyword list.
+  class GoogleSharedSet < Model
+    attribute :id
+    attribute :name
+    attribute :type
+    attribute :member_count
+  end
+
+  # A sitelink, callout or structured snippet.
+  class GoogleAsset < Model
+    attribute :id
+    attribute :name
+    attribute :type
+    attribute :text
+    attribute :final_url
+  end
+
+  # Where an asset is attached; an asset with no links serves nowhere.
+  class GoogleAssetLink < Model
+    attribute :id
+    attribute :asset_id
+    attribute :level
+    attribute :owner_id
+    attribute :field_type
+    attribute :status
+  end
+
+  # A Performance Max asset group.
+  class GoogleAssetGroup < Model
+    attribute :id
+    attribute :campaign_id
+    attribute :name
+    attribute :status
+    attribute :final_urls
+  end
+
+  # A lead from Local Services Ads, read live and never stored.
+  class GoogleLocalServicesLead < Model
+    attribute :id
+    attribute :category
+    attribute :service
+    attribute :contact_name
+    attribute :phone
+    attribute :email
+    attribute :status
+    attribute :type
+    attribute :created_at
+  end
+
+  class GoogleConversionAction < Model
+    attribute :id
+    attribute :name
+    attribute :category
+    attribute :status
+    attribute :type
+    attribute :counting_type
+    attribute :value_minor
+  end
 end

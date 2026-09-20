@@ -2,7 +2,7 @@
 
 module Fopost
   module Resources
-    # `client.ads` — Meta ads, audiences and lead forms.
+    # `client.ads` — ads, audiences and lead forms across ad networks.
     #
     # Every method needs the `ads` scope. {#boost}, {#create}, {#set_status}
     # and {#delete} spend money and also need `publish`, as do the create,
@@ -32,13 +32,19 @@ module Fopost
         parse_list(AdSource, unwrap(http.get('/ads/sources', { 'workspace_id' => workspace_id })))
       end
 
-      # The Meta login URL; the caller finishes it in their own browser.
-      # `method` is "business" (default) or "user".
-      def authorize_meta(workspace_id:, method: nil, return_to: nil)
+      # The network's login URL; the caller finishes it in their own browser.
+      # `provider` names the ad network and defaults to "meta"; `method` is the
+      # network's own login method, "business" or "user" on Meta.
+      def authorize(workspace_id:, provider: 'meta', method: nil, return_to: nil)
         body = compact_nil('workspaceId' => workspace_id, 'method' => method, 'returnTo' => return_to)
-        result = unwrap(http.post('/ads/connections/meta/authorize', body))
+        result = unwrap(http.post("/ads/connections/#{provider}/authorize", body))
         url = result.is_a?(Hash) ? result['url'] : nil
         url.nil? ? '' : url.to_s
+      end
+
+      # Deprecated. Use `authorize`, which takes a provider.
+      def authorize_meta(workspace_id:, method: nil, return_to: nil)
+        authorize(workspace_id: workspace_id, method: method, return_to: return_to)
       end
 
       # Also deletes every ad record created through the connection.

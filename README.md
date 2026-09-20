@@ -248,7 +248,7 @@ client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
 
 ## Ads
 
-Meta ads, campaigns, creatives, audiences, insights and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
+Ads, campaigns, creatives, audiences, insights and lead forms across ad networks. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
 
 ```ruby
 url = client.ads.authorize_meta(workspace_id: workspace.id)   # finish the Meta login in a browser

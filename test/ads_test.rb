@@ -67,6 +67,16 @@ class AdsTest < Minitest::Test
     assert_equal({ 'workspaceId' => 'ws_1', 'returnTo' => '/ads' }, transport.last.json)
   end
 
+  def test_authorize_names_its_ad_network
+    transport.stub(:post, '/ads/connections/pinterest/authorize',
+                   json: { 'data' => { 'url' => 'https://www.pinterest.com/oauth/' } })
+
+    url = client.ads.authorize(workspace_id: 'ws_1', provider: 'pinterest')
+
+    assert_equal 'https://www.pinterest.com/oauth/', url
+    assert_equal '/v1/ads/connections/pinterest/authorize', transport.last.path
+  end
+
   def test_delete_connection_sends_the_workspace_in_the_query
     transport.stub(:delete, '/ads/connections/conn_1', json: { 'message' => 'Deleted' })
 

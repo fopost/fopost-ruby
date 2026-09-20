@@ -28,6 +28,7 @@ All notable changes to this gem are documented here. The format follows
   a workspace keeps. All need the `inbox` scope.
 - `contacts.conversation_analytics` reads `/v1/analytics/inbox/conversations`: volume and
   median reply time per thread. Needs the `analytics` scope.
+- `snapchat` added to `Fopost::PLATFORMS`.
 
 - `accounts.create_telegram_connect_code`, `get_telegram_connect_status`, `get_telegram_bot_commands`,
   `set_telegram_bot_commands` and `delete_telegram_bot_commands` (`accounts` scope).

@@ -20,6 +20,19 @@ module Fopost
         as_hash(unwrap(http.get("/accounts/#{account_id}/health")))
       end
 
+      # The numbers only this account's network reports, in its own vocabulary:
+      # ad-break earnings, story taps, a retention curve, the search terms behind
+      # a listing. Keyed by the platform's own metric names, read from the newest
+      # collected snapshot rather than fetched live. Needs the `analytics` scope.
+      #
+      # A network whose metric access has not been granted yet answers 503
+      # (`platform_metrics_unavailable`) rather than an empty set.
+      def platform_metrics(account_id)
+        AccountPlatformMetrics.new(
+          unwrap(http.get("/accounts/#{account_id}/insights", { 'raw' => 'true' }))
+        )
+      end
+
       # Rename the account; nil or an empty string restores the platform name.
       def update(account_id, display_name:)
         body = { 'display_name' => display_name }

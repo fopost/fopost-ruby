@@ -266,6 +266,39 @@ module Fopost
         uploaded(http.post('/ads/google/conversions/adjustments', body))
       end
 
+      # ── Recommendations ──
+
+      # Google's own read on what the account should change next. `types`
+      # narrows to those recommendation types.
+      def recommendations(connection_id:, customer_id:, types: nil, workspace_id: nil)
+        extra = types.nil? || types.empty? ? {} : { 'types' => Array(types).join(',') }
+        parse_list(GoogleRecommendation, unwrap(http.get(
+                                                  '/ads/google/recommendations',
+                                                  params(connection_id, customer_id, workspace_id, extra)
+                                                )))
+      end
+
+      # The account's score and weight, and the score of each live campaign.
+      def optimization_score(connection_id:, customer_id:, workspace_id: nil)
+        GoogleOptimizationScore.new(unwrap(http.get(
+                                             '/ads/google/optimization-score',
+                                             params(connection_id, customer_id, workspace_id)
+                                           )))
+      end
+
+      # Applies each one, which changes what the live account serves or bids.
+      # Needs `publish` as well as `ads`.
+      def apply_recommendations(workspace_id:, connection_id:, customer_id:, ids:)
+        body = scope(workspace_id, connection_id, customer_id).merge('ids' => Array(ids))
+        counted(http.post('/ads/google/recommendations/apply', body), 'applied')
+      end
+
+      # Hides each one so Google stops surfacing it. Needs `publish` as well as `ads`.
+      def dismiss_recommendations(workspace_id:, connection_id:, customer_id:, ids:)
+        body = scope(workspace_id, connection_id, customer_id).merge('ids' => Array(ids))
+        counted(http.post('/ads/google/recommendations/dismiss', body), 'dismissed')
+      end
+
       # ── GAQL ──
 
       # A read-only GAQL SELECT; rows come back exactly as Google returns them.
@@ -301,8 +334,12 @@ module Fopost
       end
 
       def uploaded(body)
+        counted(body, 'uploaded')
+      end
+
+      def counted(body, key)
         result = unwrap(body)
-        result.is_a?(Hash) ? result['uploaded'].to_i : 0
+        result.is_a?(Hash) ? result[key].to_i : 0
       end
     end
   end

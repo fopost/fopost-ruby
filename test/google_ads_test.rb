@@ -84,6 +84,36 @@ class GoogleAdsTest < Minitest::Test
     assert_equal [{ 'campaign' => { 'id' => '55' } }], rows
   end
 
+  def test_recommendations_join_the_types_filter
+    transport.stub(:get, '/ads/google/recommendations',
+                   json: { 'data' => [{
+                     'id' => 'customers/1234567890/recommendations/ABC~1',
+                     'type' => 'KEYWORD',
+                     'campaignId' => '1234567890~campaign~55',
+                     'dismissed' => false,
+                     'impact' => { 'baseClicks' => 10, 'potentialClicks' => 25 }
+                   }] })
+
+    rows = client.ads.google.recommendations(
+      connection_id: 'conn_1', customer_id: '1234567890', types: %w[KEYWORD TARGET_CPA_OPT_IN]
+    )
+
+    assert_equal 'KEYWORD', rows.first.type
+    assert_equal 25, rows.first.impact.potential_clicks
+    assert_equal 'KEYWORD,TARGET_CPA_OPT_IN', transport.last.query['types']
+  end
+
+  def test_apply_recommendations_sends_the_ids
+    transport.stub(:post, '/ads/google/recommendations/apply', json: { 'data' => { 'applied' => 1 } })
+
+    applied = client.ads.google.apply_recommendations(
+      workspace_id: 'ws_1', connection_id: 'conn_1', customer_id: '1234567890',
+      ids: ['customers/1234567890/recommendations/ABC~1']
+    )
+
+    assert_equal 1, applied
+  end
+
   def test_authorize_google_has_its_own_route
     transport.stub(:post, '/ads/connections/google/authorize',
                    json: { 'data' => { 'url' => 'https://accounts.google.com/o/x' } })

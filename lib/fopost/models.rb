@@ -87,6 +87,199 @@ module Fopost
     attribute :commands, [TelegramBotCommand]
   end
 
+  # A tappable prompt Messenger or Instagram shows before the first message.
+  class MetaIceBreaker < Model
+    attribute :question
+    attribute :payload
+  end
+
+  # The ice breakers set on one account.
+  class MetaIceBreakers < Model
+    attribute :ice_breakers, [MetaIceBreaker]
+  end
+
+  # A menu item: a `postback` with a payload, or a `web_url` with a link.
+  class MetaMenuItem < Model
+    attribute :type
+    attribute :title
+    attribute :payload
+    attribute :url
+  end
+
+  # One locale's menu; `default` is the fallback every language uses.
+  class MetaPersistentMenuEntry < Model
+    attribute :locale
+    attribute :call_to_actions, [MetaMenuItem]
+    attribute :composer_input_disabled
+  end
+
+  # The persistent menu set on one account, one entry per locale.
+  class MetaPersistentMenu < Model
+    attribute :persistent_menu, [MetaPersistentMenuEntry]
+  end
+
+  # One locale's greeting, up to 160 characters.
+  class MetaGreetingText < Model
+    attribute :locale
+    attribute :text
+  end
+
+  # The greeting set on one account, one entry per locale.
+  class MetaGreeting < Model
+    attribute :greeting, [MetaGreetingText]
+  end
+
+  # What the network delivers to the FoPost webhook for one account.
+  class WebhookSubscription < Model
+    attribute :subscribed
+    attribute :fields
+    attribute :missing_fields
+  end
+
+  # The outcome of a Messenger thread hand-over; `app_id` is nil when control was taken back.
+  class InboxHandover < Model
+    attribute :app_id
+    attribute :control
+  end
+
+  # A Pinterest board; `id` travels as the `board_id` platform setting to pin to it.
+  class PinterestBoard < Model
+    attribute :id
+    attribute :name
+    attribute :privacy
+    attribute :description
+    attribute :image
+  end
+
+  # A playlist on the channel; `is_default` marks the one a new video joins by default.
+  class YouTubePlaylist < Model
+    attribute :id
+    attribute :title
+    attribute :description
+    attribute :privacy
+    attribute :item_count
+    attribute :thumbnail_url
+    attribute :is_default
+  end
+
+  # A caption track on one of the channel's videos.
+  class YouTubeCaptionTrack < Model
+    attribute :id
+    attribute :language
+    attribute :name
+    attribute :track_kind
+    attribute :is_draft
+    attribute :is_auto_synced
+    attribute :last_updated
+  end
+
+  # One caption track read back as text; `transcript` is SRT.
+  class YouTubeTranscript < Model
+    attribute :caption_id
+    attribute :transcript
+  end
+
+  # The default post languages for a connection; up to three BCP-47 tags.
+  class BlueskyLanguages < Model
+    attribute :languages
+  end
+
+  # The switches TikTok enforces at publish time, set on the account itself.
+  class TikTokCreatorInfo < Model
+    attribute :username
+    attribute :nickname
+    attribute :avatar_url
+    attribute :privacy_level_options
+    attribute :comment_disabled
+    attribute :duet_disabled
+    attribute :stitch_disabled
+    attribute :max_video_post_duration_sec
+  end
+
+  # A track from TikTok's Commercial Music Library; `id` travels as the
+  # `music_id` platform setting.
+  class TikTokMusic < Model
+    attribute :id
+    attribute :title
+    attribute :author
+    attribute :duration_sec
+    attribute :cover_url
+    attribute :preview_url
+  end
+
+  # A place a post can be tagged with; `id` travels as the `location_id`
+  # platform setting.
+  class TikTokPlace < Model
+    attribute :id
+    attribute :name
+    attribute :address
+    attribute :city
+    attribute :country
+  end
+
+  # One of the account's own videos, resolved from a share link. TikTok serves
+  # no raw media file, so `download_url` is the share address.
+  class TikTokVideoSource < Model
+    attribute :video_id
+    attribute :title
+    attribute :description
+    attribute :duration_sec
+    attribute :cover_image_url
+    attribute :share_url
+    attribute :embed_link
+    attribute :download_url
+  end
+
+  # A track a Reel can carry; `id` travels as the `audio_id` platform setting.
+  class InstagramAudio < Model
+    attribute :id
+    attribute :title
+    attribute :artist
+    attribute :duration_ms
+    attribute :audio_type
+    attribute :cover_artwork_url
+    attribute :preview_url
+    attribute :username
+    attribute :is_ads_eligible
+  end
+
+  # What this account has published in the rolling window, and what is left.
+  class InstagramPublishingLimit < Model
+    attribute :quota_usage
+    attribute :quota_total
+    attribute :quota_duration_sec
+    attribute :remaining
+  end
+
+  # A story still inside its 24 hours; `insights` is present only when asked for.
+  class InstagramStory < Model
+    attribute :id
+    attribute :media_type
+    attribute :media_product_type
+    attribute :permalink
+    attribute :media_url
+    attribute :thumbnail_url
+    attribute :caption
+    attribute :timestamp
+    attribute :insights
+  end
+
+  # Insights for one story.
+  class InstagramStoryInsights < Model
+    attribute :story_id
+    attribute :insights
+  end
+
+  # An entity a post can mention; `annotation` is what the post text carries.
+  class LinkedInMention < Model
+    attribute :urn
+    attribute :name
+    attribute :vanity_name
+    attribute :logo_url
+    attribute :type
+    attribute :annotation
+  end
+
   # A channel the Slack app can post to; `is_current` marks the one this account posts to.
   class SlackChannel < Model
     attribute :id
@@ -111,6 +304,114 @@ module Fopost
     attribute :username
     attribute :icon_url
     attribute :icon_emoji
+  end
+
+  # A Discord text channel the bot can post to; `is_current` marks this account's.
+  class DiscordChannel < Model
+    attribute :id
+    attribute :name
+    # Discord's channel type: 0 text, 5 announcement, 15 forum.
+    attribute :type
+    attribute :parent_id
+    attribute :nsfw
+    # False when a channel permission in Discord shuts the bot out.
+    attribute :can_post
+    attribute :is_current
+  end
+
+  # The nickname and avatar the bot wears in the server; nil means its own.
+  class DiscordIdentity < Model
+    attribute :username
+    attribute :avatar_url
+  end
+
+  # A message in the connected channel.
+  class DiscordMessage < Model
+    attribute :id
+    attribute :channel_id
+    attribute :content
+    attribute :author_id
+    attribute :author_name
+    attribute :pinned
+    attribute :created_at
+  end
+
+  # A message the bot put somewhere.
+  class DiscordMessageRef < Model
+    attribute :id
+    attribute :channel_id
+  end
+
+  # A thread started on a message.
+  class DiscordThread < Model
+    attribute :id
+    attribute :name
+    attribute :parent_id
+  end
+
+  # An event on the server's calendar; `channel_id` is a voice or stage channel,
+  # otherwise `location` says where it happens.
+  class DiscordScheduledEvent < Model
+    attribute :id
+    attribute :name
+    attribute :description
+    attribute :channel_id
+    attribute :location
+    attribute :start_time
+    attribute :end_time
+    # One of scheduled, active, completed, canceled.
+    attribute :status
+    attribute :user_count
+  end
+
+  # A person in the connected server; `id` is the member id for a DM or a role.
+  class DiscordMember < Model
+    attribute :id
+    attribute :username
+    attribute :display_name
+    attribute :nick
+    attribute :avatar
+    attribute :is_bot
+    attribute :roles
+    attribute :joined_at
+  end
+
+  # A role in the connected server; `permissions` is Discord's bitfield as a decimal string.
+  class DiscordRole < Model
+    attribute :id
+    attribute :name
+    attribute :color
+    attribute :hoist
+    attribute :mentionable
+    # A managed role belongs to an integration and cannot be edited.
+    attribute :managed
+    attribute :position
+    attribute :permissions
+  end
+
+  # One metric a network reports under its own name. `key` is the platform's own
+  # name and is stable; `label` is ours and may be reworded. `value` is a number
+  # for every kind but `series`, which is an array of points.
+  class PlatformMetricRow < Model
+    attribute :key
+    attribute :label
+    attribute :kind
+    attribute :value
+  end
+
+  # One side of a per-network metric set: the account itself, or its newest
+  # measured post. `external_post_id` is nil on the account side.
+  class PlatformMetricsBlock < Model
+    attribute :fetched_at
+    attribute :external_post_id
+    attribute :metrics, [PlatformMetricRow]
+  end
+
+  # What only this network reports, in its own vocabulary.
+  class AccountPlatformMetrics < Model
+    attribute :platform
+    attribute :account, PlatformMetricsBlock
+    attribute :post, PlatformMetricsBlock
   end
 
   # A named set of connected accounts in one workspace.
@@ -376,7 +677,7 @@ module Fopost
     attribute :published, :hash
   end
 
-  # A comment, mention or direct message on a connected account.
+  # A comment, mention, review or direct message on a connected account.
   class InboxItem < Model
     attribute :id
     attribute :workspace_id
@@ -389,6 +690,8 @@ module Fopost
     attribute :author_handle
     attribute :author_avatar_url
     attribute :text
+    # Stars on a review, 1-5. Nil on every other type.
+    attribute :rating
     attribute :attachments, [InboxAttachment]
     attribute :permalink
     attribute :post_external_id
@@ -412,6 +715,8 @@ module Fopost
     attribute :can_send_media
     attribute :can_quick_reply
     attribute :can_private_reply
+    # The platform's own state: published, held, spam or rejected.
+    attribute :moderation_status
     attribute :post, :hash
     attribute :post_context, InboxPostContext
     attribute :account, InboxAccountRef
@@ -427,6 +732,8 @@ module Fopost
     attribute :last_comment_at, :time
     attribute :last_comment_text
     attribute :last_comment_author
+    # Stars, on a review thread. Nil on comments and mentions.
+    attribute :rating
     attribute :post, InboxPostContext
     attribute :account, InboxAccountRef
   end
@@ -457,6 +764,45 @@ module Fopost
     attribute :dm_supported
     attribute :dm_pending_reason
     attribute :can_start_conversation
+    # The grant predates a permission the inbox needs; reconnect the account once.
+    attribute :reconnect_required
+  end
+
+  # One thing the workspace has told FoPost about itself: an FAQ, a note, a page
+  # on its own site, or a plain-text/CSV file from the media library.
+  class KnowledgeSource < Model
+    attribute :id
+    # `faq`, `text`, `url` or `file`.
+    attribute :kind
+    attribute :title
+    # Only a `ready` source is searched.
+    attribute :status
+    # Why the last sync failed, in plain words.
+    attribute :status_message
+    # Set for `url` sources.
+    attribute :url
+    # Set for `file` sources: the media library item read.
+    attribute :media_id
+    # nil means the source serves the whole workspace.
+    attribute :brand_voice_id
+    # Searchable passages the last sync produced.
+    attribute :chunk_count
+    # The typed text, for `faq` and `text` sources only.
+    attribute :content
+    attribute :last_synced_at, :time
+    attribute :created_at, :time
+    attribute :updated_at, :time
+  end
+
+  # One retrieved passage, with the source it came from so a reply can cite it.
+  class KnowledgeMatch < Model
+    attribute :source_id
+    attribute :source_title
+    attribute :source_kind
+    attribute :source_url
+    attribute :text
+    # Similarity to the question, 0-1.
+    attribute :score
   end
 
   class InboxPlatform < Model
@@ -743,6 +1089,194 @@ module Fopost
     attribute :url_tags
   end
 
+  # ─── Product catalogs ──────────────────────────────────────────
+
+  # A product catalog on the connection's business portfolio, read live.
+  class ProductCatalog < Model
+    attribute :id
+    attribute :name
+    attribute :vertical
+    attribute :product_count
+  end
+
+  class ProductCatalogsResult < Model
+    attribute :catalogs, [ProductCatalog]
+    attribute :workspace_id
+  end
+
+  # One product in a catalog. `price_minor` is minor units of `currency`.
+  class CatalogProduct < Model
+    attribute :id
+    # Your own key for the product.
+    attribute :retailer_id
+    attribute :name
+    attribute :description
+    attribute :availability
+    attribute :condition
+    attribute :price_minor
+    attribute :currency
+    attribute :image_url
+    attribute :url
+  end
+
+  class CatalogProductsPage < Model
+    attribute :products, [CatalogProduct]
+    attribute :next_cursor
+  end
+
+  class CatalogBatchResult < Model
+    attribute :handles
+    # Products sent in this batch.
+    attribute :accepted
+  end
+
+  # Keeps a catalog in step with a product file you host.
+  class ProductFeed < Model
+    attribute :id
+    attribute :name
+    attribute :url
+    attribute :schedule
+    attribute :created_at, :time
+  end
+
+  class ProductFeedUpload < Model
+    attribute :id
+    attribute :started_at, :time
+    attribute :ended_at, :time
+    attribute :status
+    attribute :error_count
+    attribute :warning_count
+  end
+
+  # The slice of a catalog one catalog ad runs from.
+  class ProductSet < Model
+    attribute :id
+    attribute :name
+    attribute :product_count
+    # The network's own product-set filter.
+    attribute :filter
+  end
+
+  # ─── Reach and frequency ───────────────────────────────────────
+
+  # A priced flight. Nothing is bought until it is reserved.
+  class ReachFrequencyPrediction < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :reach
+    attribute :impressions
+    attribute :frequency_cap
+    # Account currency, minor units.
+    attribute :budget_minor
+    attribute :start_at, :time
+    attribute :end_at, :time
+    # True once the prediction holds inventory.
+    attribute :reserved
+  end
+
+  class ReachFrequencyResult < Model
+    attribute :predictions, [ReachFrequencyPrediction]
+    attribute :workspace_id
+  end
+
+  # ─── Ad Library ────────────────────────────────────────────────
+
+  # One public archive entry. Read live on every search and stored nowhere.
+  class AdLibraryEntry < Model
+    attribute :id
+    attribute :page_id
+    attribute :page_name
+    attribute :bodies
+    attribute :titles
+    attribute :link_urls
+    attribute :snapshot_url
+    attribute :publisher_platforms
+    attribute :started_at, :time
+    attribute :ended_at, :time
+    # Only on the archive's disclosure entries.
+    attribute :currency
+    attribute :spend_lower
+    attribute :spend_upper
+    attribute :impressions_lower
+    attribute :impressions_upper
+  end
+
+  class AdLibraryPage < Model
+    attribute :entries, [AdLibraryEntry]
+    attribute :next_cursor
+  end
+
+  # ─── Partnership ads ───────────────────────────────────────────
+
+  # A creator who allowlisted this advertiser for partnership ads.
+  class PartnershipCreator < Model
+    attribute :id
+    attribute :username
+    attribute :name
+    attribute :status
+    attribute :permissions
+  end
+
+  # ─── Ad account settings ───────────────────────────────────────
+
+  class AdActivity < Model
+    attribute :id
+    attribute :event_type
+    attribute :actor_name
+    attribute :object_name
+    attribute :object_type
+    attribute :extra_data
+    attribute :created_at, :time
+  end
+
+  class AdActivityResult < Model
+    attribute :activity, [AdActivity]
+    attribute :workspace_id
+  end
+
+  # Groups campaigns, ad sets and ads for reporting.
+  class AdLabel < Model
+    attribute :id
+    attribute :name
+    attribute :created_at, :time
+  end
+
+  # An A/B study splitting traffic across its cells.
+  class AdStudy < Model
+    attribute :id
+    attribute :name
+    attribute :description
+    attribute :type
+    attribute :status
+    attribute :start_at, :time
+    attribute :end_at, :time
+  end
+
+  # How many iOS 14 campaigns an ad account may run at once, per app.
+  class IosCampaignLimits < Model
+    attribute :limit
+    attribute :used
+    attribute :app_id
+  end
+
+  # A window the network should expect heavier spend over.
+  class HighDemandPeriod < Model
+    attribute :id
+    attribute :start_at, :time
+    attribute :end_at, :time
+    attribute :budget_value
+    attribute :budget_value_type
+  end
+
+  # Weights conversions so some audiences count for more than others.
+  class ValueRuleSet < Model
+    attribute :id
+    attribute :name
+    attribute :status
+    attribute :rules
+  end
+
   class ReachEstimate < Model
     attribute :lower
     attribute :upper
@@ -819,11 +1353,331 @@ module Fopost
     attribute :next_cursor
   end
 
+  # Who did something: `user`, `api_key`, `agent` or `system`.
+  class ActivityActor < Model
+    attribute :type
+    attribute :name
+  end
+
+  # One thing that happened in a workspace. A `security` kind is an audit row.
+  class ActivityEvent < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :kind
+    attribute :ref_type
+    attribute :ref_id
+    attribute :summary
+    attribute :actor, ActivityActor
+    attribute :time, :time
+  end
+
+  # One page of activity; pass `next_cursor` back as `cursor:` for the next.
+  class ActivityPage < Model
+    attribute :events, [ActivityEvent]
+    attribute :next_cursor
+  end
+
   class LeadPage < Model
     attribute :connection_id
     attribute :page_id
     attribute :page_name
     attribute :created_at, :time
     attribute :workspace_id
+  end
+  # ─── Contacts ────────────────────────────────────────────────────
+
+  # One handle on one network. The handle is lower-cased with no leading @.
+  class ContactChannel < Model
+    attribute :platform
+    attribute :handle
+    # The platform's own id for this person, when the network gave us one.
+    attribute :external_id
+  end
+
+  class ContactLabel < Model
+    attribute :id
+    attribute :name
+    attribute :color
+  end
+
+  # One person, however many handles they write from.
+  class Contact < Model
+    attribute :id
+    attribute :display_name
+    attribute :channels, [ContactChannel]
+    # inbox, radar or import — what first created the row.
+    attribute :source
+    attribute :note
+    attribute :first_seen_at, :time
+    attribute :last_seen_at, :time
+    # Custom field values, keyed by field key.
+    attribute :fields, :hash
+    attribute :labels, [ContactLabel]
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One thread a contact appears in.
+  class ContactConversation < Model
+    # How the inbox groups it: DM thread id, else root post id, else handle.
+    attribute :key
+    attribute :account_id
+    attribute :account_username
+    attribute :platform
+    attribute :messages
+    attribute :received
+    attribute :sent
+    attribute :last_message_at, :time
+    attribute :last_item_id
+  end
+
+  class ContactImportSkip < Model
+    attribute :row
+    attribute :reason
+  end
+
+  # What a CSV import did.
+  class ContactImportResult < Model
+    attribute :created
+    # Rows that folded into a contact already on file.
+    attribute :merged
+    attribute :skipped, [ContactImportSkip]
+    # Columns that named neither a reserved field nor a custom field.
+    attribute :unknown_columns
+  end
+
+  # A column the workspace invented to keep about its contacts.
+  class ContactField < Model
+    attribute :id
+    # Lower-case key, also the CSV column header. Fixed once created.
+    attribute :key
+    attribute :name
+    # text, number, date, select or boolean.
+    attribute :type
+    # Allowed values when the type is select.
+    attribute :options
+    attribute :position
+  end
+
+  class ConversationAnalyticsRow < Model
+    attribute :key
+    attribute :account_id
+    attribute :platform
+    attribute :received
+    attribute :sent
+    attribute :answered
+    attribute :open
+    # Median minutes to the first reply in this thread.
+    attribute :median_response_minutes
+    attribute :first_message_at, :time
+    attribute :last_message_at, :time
+  end
+
+  # Inbox analytics broken out per thread.
+  class ConversationAnalytics < Model
+    attribute :conversations, [ConversationAnalyticsRow]
+    attribute :total
+    attribute :page
+    attribute :per_page
+  end
+
+  # The pagination block a contacts listing returns.
+  class ContactPageMeta < Model
+    attribute :page
+    attribute :per_page
+    attribute :total
+  end
+
+  # ─── Broadcasts and sequences ────────────────────────────────────
+
+  # What became of a broadcast's recipients, by status.
+  class BroadcastCounts < Model
+    attribute :total
+    attribute :sent
+    # Usually the messaging window doing its job.
+    attribute :skipped
+    attribute :failed
+    attribute :pending
+  end
+
+  # One message, sent into conversations the workspace already has.
+  class Broadcast < Model
+    attribute :id
+    # Internal only; never sent to anyone.
+    attribute :name
+    attribute :text
+    attribute :account_id
+    attribute :audience, :hash
+    # draft, scheduled, sending, sent or cancelled.
+    attribute :status
+    attribute :scheduled_at, :time
+    attribute :sent_at, :time
+    attribute :created_at, :time
+    attribute :counts, BroadcastCounts
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One contact on one broadcast, and what became of their message.
+  class BroadcastRecipient < Model
+    attribute :contact_id
+    attribute :display_name
+    # pending, sent, skipped or failed.
+    attribute :status
+    # Why nothing was sent: window_closed, no_conversation or
+    # unsupported_platform. window_closed means the network's messaging
+    # window had shut, so nothing was attempted.
+    attribute :skip_reason
+    attribute :sent_at, :time
+    attribute :error
+  end
+
+  # One message and how long after the previous step it goes out.
+  class SequenceStep < Model
+    attribute :delay_hours
+    attribute :text
+    attribute :media_id
+  end
+
+  # Where a sequence's enrollments stand, by status.
+  class SequenceEnrollmentCounts < Model
+    attribute :total
+    attribute :active
+    attribute :completed
+    attribute :stopped
+    attribute :failed
+  end
+
+  # A series of messages, each a delay after the one before.
+  class Sequence < Model
+    attribute :id
+    attribute :name
+    attribute :account_id
+    attribute :steps, [SequenceStep]
+    # active or paused. A paused sequence fires nothing.
+    attribute :status
+    attribute :created_at, :time
+    attribute :enrollments, SequenceEnrollmentCounts
+    # Only on a listing that spans workspaces.
+    attribute :workspace_id
+  end
+
+  # One contact walking one sequence.
+  class Enrollment < Model
+    attribute :id
+    attribute :contact_id
+    attribute :display_name
+    # Steps already sent, so also the index of the next one.
+    attribute :step
+    attribute :next_at, :time
+    # active, completed, stopped or failed.
+    attribute :status
+    attribute :last_sent_at, :time
+    # On a skipped step, the reason it was skipped.
+    attribute :error
+  end
+
+  # ─── Google Ads ───────────────────────────────────────────────────
+
+  # A keyword on an ad group. `id` is `<customer_id>~keyword~<ad_group_id>~<criterion_id>`.
+  class GoogleKeyword < Model
+    attribute :id
+    attribute :ad_group_id
+    attribute :text
+    attribute :match_type
+    attribute :status
+    # Account currency, minor units.
+    attribute :cpc_bid_minor
+    attribute :negative
+  end
+
+  class GoogleKeywordIdea < Model
+    attribute :text
+    attribute :avg_monthly_searches
+    attribute :competition
+    attribute :low_top_of_page_bid_minor
+    attribute :high_top_of_page_bid_minor
+  end
+
+  class GoogleSearchTerm < Model
+    attribute :term
+    attribute :ad_group_id
+    attribute :status
+    attribute :metrics
+  end
+
+  class GoogleBidStrategy < Model
+    attribute :id
+    attribute :name
+    attribute :type
+    attribute :status
+    attribute :campaign_count
+  end
+
+  class GoogleAdScheduleSlot < Model
+    attribute :id
+    attribute :day_of_week
+    attribute :start_hour
+    attribute :end_hour
+    attribute :bid_modifier
+  end
+
+  # A negative keyword list.
+  class GoogleSharedSet < Model
+    attribute :id
+    attribute :name
+    attribute :type
+    attribute :member_count
+  end
+
+  # A sitelink, callout or structured snippet.
+  class GoogleAsset < Model
+    attribute :id
+    attribute :name
+    attribute :type
+    attribute :text
+    attribute :final_url
+  end
+
+  # Where an asset is attached; an asset with no links serves nowhere.
+  class GoogleAssetLink < Model
+    attribute :id
+    attribute :asset_id
+    attribute :level
+    attribute :owner_id
+    attribute :field_type
+    attribute :status
+  end
+
+  # A Performance Max asset group.
+  class GoogleAssetGroup < Model
+    attribute :id
+    attribute :campaign_id
+    attribute :name
+    attribute :status
+    attribute :final_urls
+  end
+
+  # A lead from Local Services Ads, read live and never stored.
+  class GoogleLocalServicesLead < Model
+    attribute :id
+    attribute :category
+    attribute :service
+    attribute :contact_name
+    attribute :phone
+    attribute :email
+    attribute :status
+    attribute :type
+    attribute :created_at
+  end
+
+  class GoogleConversionAction < Model
+    attribute :id
+    attribute :name
+    attribute :category
+    attribute :status
+    attribute :type
+    attribute :counting_type
+    attribute :value_minor
   end
 end

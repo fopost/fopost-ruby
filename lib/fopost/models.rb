@@ -1680,4 +1680,39 @@ module Fopost
     attribute :counting_type
     attribute :value_minor
   end
+
+  # What Google projects applying a recommendation would change.
+  class GoogleRecommendationImpact < Model
+    attribute :base_clicks
+    attribute :potential_clicks
+    attribute :base_cost_minor
+    attribute :potential_cost_minor
+    attribute :base_conversions
+    attribute :potential_conversions
+  end
+
+  # One of Google's own recommendations. The id is the Google resource name
+  # rather than the `~` form other objects use, because a recommendation is not
+  # an object you address again: it is what apply and dismiss take.
+  class GoogleRecommendation < Model
+    attribute :id
+    attribute :type
+    attribute :campaign_id
+    attribute :ad_group_id
+    attribute :dismissed
+    attribute :impact, GoogleRecommendationImpact
+  end
+
+  class GoogleOptimizationScoreCampaign < Model
+    attribute :id
+    attribute :name
+    attribute :score
+  end
+
+  # Google's estimate of how well the account is set up, from 0 to 1.
+  class GoogleOptimizationScore < Model
+    attribute :score
+    attribute :weight
+    attribute :campaigns, [GoogleOptimizationScoreCampaign]
+  end
 end

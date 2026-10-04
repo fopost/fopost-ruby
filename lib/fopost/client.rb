@@ -6,6 +6,7 @@ require 'fopost/resources/base'
 require 'fopost/resources/account_groups'
 require 'fopost/resources/accounts'
 require 'fopost/resources/ads'
+require 'fopost/resources/analytics'
 require 'fopost/resources/google_ads'
 require 'fopost/resources/ai'
 require 'fopost/resources/broadcasts'
@@ -33,7 +34,7 @@ module Fopost
     DEFAULT_BASE_URL = HTTP::Client::DEFAULT_BASE_URL
 
     attr_reader :posts, :accounts, :account_groups, :workspaces, :labels, :ai, :inbox, :contacts, :broadcasts,
-                :sequences, :knowledge, :ads, :validate, :media, :activity, :google_business
+                :sequences, :knowledge, :ads, :validate, :media, :activity, :google_business, :analytics
 
     def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, timeout: HTTP::Client::DEFAULT_TIMEOUT,
                    max_retries: HTTP::Client::DEFAULT_MAX_RETRIES, transport: nil, sleeper: nil)
@@ -66,6 +67,7 @@ module Fopost
       @ads = Resources::Ads.new(@http)
       @validate = Resources::Validate.new(@http)
       @media = Resources::Media.new(@http)
+      @analytics = Resources::Analytics.new(@http)
       @activity = Resources::Activity.new(@http)
       @google_business = Resources::GoogleBusiness.new(@http)
     end

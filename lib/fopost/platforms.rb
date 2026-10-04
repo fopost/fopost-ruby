@@ -15,6 +15,7 @@ module Fopost
     slack
     reddit
     pinterest
+    snapchat
     tumblr
     dribbble
     mewe

@@ -169,6 +169,174 @@ class ResourcesTest < Minitest::Test
     assert_equal 'webhook_connection', error.code
   end
 
+  def test_discord_channels_and_switch
+    channel = { 'id' => 'c2', 'name' => 'launches', 'type' => 0, 'parent_id' => nil,
+                'nsfw' => false, 'can_post' => true, 'is_current' => true }
+    transport.stub(:get, '/accounts/acc_1/discord/channels', json: { 'data' => [channel] })
+    transport.stub(:patch, '/accounts/acc_1/discord/channels/current', json: { 'data' => channel })
+
+    channels = client.accounts.list_discord_channels('acc_1')
+
+    assert_equal 'c2', channels[0].id
+    assert channels[0].is_current
+
+    client.accounts.switch_discord_channel('acc_1', 'c2')
+
+    assert_equal({ 'channel_id' => 'c2' }, transport.last.json)
+  end
+
+  def test_discord_identity_partial_update
+    identity = { 'data' => { 'username' => 'Release Bot', 'avatar_url' => nil } }
+    transport.stub(:patch, '/accounts/acc_1/discord/identity', json: identity)
+
+    updated = client.accounts.update_discord_identity('acc_1', username: 'Release Bot')
+
+    assert_equal 'Release Bot', updated.username
+    # Omitted keywords stay off the wire, so Discord keeps them.
+    assert_equal({ 'username' => 'Release Bot' }, transport.last.json)
+  end
+
+  def test_discord_event_round_trip
+    event = { 'id' => 'e1', 'name' => 'Launch stream', 'description' => nil, 'channel_id' => nil,
+              'location' => 'https://example.com/live', 'start_time' => '2026-10-01T18:00:00.000Z',
+              'end_time' => '2026-10-01T19:00:00.000Z', 'status' => 'scheduled', 'user_count' => 0 }
+    transport.stub(:post, '/accounts/acc_1/discord/events', json: { 'data' => event })
+    transport.stub(:get, '/accounts/acc_1/discord/events', json: { 'data' => [event] })
+    transport.stub(:patch, '/accounts/acc_1/discord/events/e1',
+                   json: { 'data' => event.merge('status' => 'canceled') })
+    transport.stub(:delete, '/accounts/acc_1/discord/events/e1', json: { 'data' => { 'deleted' => true } })
+
+    created = client.accounts.create_discord_event('acc_1', name: 'Launch stream',
+                                                            start_time: '2026-10-01T18:00:00.000Z',
+                                                            end_time: '2026-10-01T19:00:00.000Z',
+                                                            location: 'https://example.com/live')
+
+    assert_equal 'e1', created.id
+    assert_equal({ 'name' => 'Launch stream', 'start_time' => '2026-10-01T18:00:00.000Z',
+                   'end_time' => '2026-10-01T19:00:00.000Z', 'location' => 'https://example.com/live' },
+                 transport.last.json)
+
+    assert_equal ['e1'], client.accounts.list_discord_events('acc_1').map(&:id)
+
+    updated = client.accounts.update_discord_event('acc_1', 'e1', status: 'canceled')
+
+    assert_equal 'canceled', updated.status
+    assert_equal({ 'status' => 'canceled' }, transport.last.json)
+
+    assert_nil client.accounts.delete_discord_event('acc_1', 'e1')
+  end
+
+  def test_discord_members_roles_and_dm
+    member = { 'id' => 'u7', 'username' => 'ada', 'is_bot' => false, 'roles' => ['r1'] }
+    transport.stub(:get, '/accounts/acc_1/discord/members', json: { 'data' => [member] })
+    transport.stub(:put, '/accounts/acc_1/discord/roles/r1/members/u7', json: { 'data' => { 'assigned' => true } })
+    transport.stub(:post, '/accounts/acc_1/discord/dm', json: { 'data' => { 'id' => 'm1', 'channel_id' => 'dm1' } })
+
+    members = client.accounts.list_discord_members('acc_1', query: 'ada')
+
+    assert_equal 'u7', members[0].id
+    assert_equal({ 'q' => 'ada' }, transport.last.query)
+
+    assert_nil client.accounts.add_discord_member_role('acc_1', 'r1', 'u7')
+
+    sent = client.accounts.send_discord_dm('acc_1', 'u7', 'hi')
+
+    assert_equal 'dm1', sent.channel_id
+    assert_equal({ 'member_id' => 'u7', 'content' => 'hi' }, transport.last.json)
+  end
+
+  def test_discord_webhook_connection_raises_with_its_code
+    body = { 'error' => 'webhook_connection', 'message' => 'Upgrade it to the bot first' }
+    transport.stub(:get, '/accounts/acc_1/discord/channels', status: 409, json: body)
+
+    error = assert_raises(Fopost::Error) { client.accounts.list_discord_channels('acc_1') }
+
+    assert_equal 409, error.status
+    assert_equal 'webhook_connection', error.code
+  end
+
+  def test_create_pinterest_board_sends_only_what_was_given
+    board = { 'id' => 'b1', 'name' => 'Recipes', 'privacy' => 'PUBLIC' }
+    transport.stub(:post, '/accounts/acc_1/pinterest/boards', status: 201, json: { 'data' => board })
+
+    created = client.accounts.create_pinterest_board('acc_1', name: 'Recipes')
+
+    assert_equal 'b1', created.id
+    assert_equal({ 'name' => 'Recipes' }, transport.last.json)
+  end
+
+  def test_youtube_playlists_and_transcript
+    playlist = { 'id' => 'PL1', 'title' => 'Tutorials', 'is_default' => true }
+    transport.stub(:get, '/accounts/acc_1/youtube/playlists', json: { 'data' => [playlist] })
+    transport.stub(:get, '/accounts/acc_1/youtube/captions/cap1',
+                   json: { 'data' => { 'caption_id' => 'cap1', 'transcript' => "1\nHello\n" } })
+
+    assert client.accounts.list_youtube_playlists('acc_1')[0].is_default
+    assert_includes client.accounts.read_youtube_transcript('acc_1', 'cap1').transcript, 'Hello'
+  end
+
+  def test_bluesky_languages_round_trip
+    transport.stub(:put, '/accounts/acc_1/bluesky/languages',
+                   json: { 'data' => { 'languages' => %w[en pt-BR] } })
+
+    result = client.accounts.set_bluesky_languages('acc_1', %w[en pt-BR])
+
+    assert_equal %w[en pt-BR], result.languages
+    assert_equal({ 'languages' => %w[en pt-BR] }, transport.last.json)
+  end
+
+  def test_tiktok_creator_info_reports_the_accounts_own_switches
+    transport.stub(:get, '/accounts/acc_1/tiktok/creator-info',
+                   json: { 'data' => { 'privacy_level_options' => ['PUBLIC_TO_EVERYONE'],
+                                       'duet_disabled' => true,
+                                       'max_video_post_duration_sec' => 600 } })
+
+    info = client.accounts.get_tiktok_creator_info('acc_1')
+
+    assert info.duet_disabled
+    assert_equal 600, info.max_video_post_duration_sec
+  end
+
+  def test_tiktok_music_and_place_search_pass_the_query_through
+    transport.stub(:get, '/accounts/acc_1/tiktok/music',
+                   json: { 'data' => [{ 'id' => 'm1', 'title' => 'Sunrise', 'author' => 'Kite' }] })
+    transport.stub(:get, '/accounts/acc_1/tiktok/locations',
+                   json: { 'data' => [{ 'id' => 'p1', 'name' => 'Blue Bottle' }] })
+
+    tracks = client.accounts.search_tiktok_music('acc_1', q: 'sunrise', limit: 5)
+
+    assert_equal 'm1', tracks[0].id
+    assert_equal({ 'q' => 'sunrise', 'limit' => '5' }, transport.last.query)
+
+    places = client.accounts.search_tiktok_locations('acc_1', q: 'cafe')
+
+    assert_equal 'Blue Bottle', places[0].name
+  end
+
+  def test_tiktok_video_lookup_returns_the_address_a_repurpose_run_reads
+    transport.stub(:post, '/accounts/acc_1/tiktok/video-download',
+                   json: { 'data' => { 'video_id' => '7300000000000000000',
+                                       'download_url' => 'https://www.tiktok.com/@a/video/7300000000000000000' } })
+
+    video = client.accounts.lookup_tiktok_video('acc_1', 'https://www.tiktok.com/@a/video/7300000000000000000')
+
+    assert_equal '7300000000000000000', video.video_id
+    refute_nil video.download_url
+  end
+
+  def test_instagram_and_linkedin_reads
+    transport.stub(:get, '/accounts/acc_1/instagram/publishing-limit',
+                   json: { 'data' => { 'quota_usage' => 12, 'quota_total' => 50, 'remaining' => 38 } })
+    mention = { 'urn' => 'urn:li:organization:2414183', 'name' => 'Devtestco',
+                'annotation' => '@[Devtestco](urn:li:organization:2414183)' }
+    transport.stub(:get, '/accounts/acc_1/linkedin/mentions', json: { 'data' => [mention] })
+
+    assert_equal 38, client.accounts.get_instagram_publishing_limit('acc_1').remaining
+    mentions = client.accounts.search_linkedin_mentions('acc_1', 'devtestco')
+
+    assert_equal '@[Devtestco](urn:li:organization:2414183)', mentions[0].annotation
+  end
+
   def test_labels_list
     transport.stub(:get, '/labels', json: { 'data' => [LABEL_FIXTURE] })
 

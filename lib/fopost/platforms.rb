@@ -47,4 +47,28 @@ module Fopost
     failed
     cancelled
   ].freeze
+
+  BLOG_ARTICLE_STATUSES = %w[
+    queued
+    writing
+    draft
+    scheduled
+    publishing
+    published
+    failed
+    rejected
+  ].freeze
+
+  BLOG_KEYWORD_STATUSES = %w[
+    suggested
+    planned
+    written
+    dismissed
+  ].freeze
+
+  BLOG_TARGET_KINDS = %w[
+    product_blog
+    account
+    website
+  ].freeze
 end

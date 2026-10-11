@@ -1924,4 +1924,143 @@ module Fopost
     attribute :weight
     attribute :campaigns, [GoogleOptimizationScoreCampaign]
   end
+
+  # ─── Blog ─────────────────────────────────────────────────────────
+
+  # Where articles publish, how often they are planned and how long a draft
+  # waits for review. `website_secret` is never on this model; it is shown
+  # once, on the update that first sets `website_url`, or on a rotation.
+  class BlogSettings < Model
+    attribute :site_url
+    attribute :topic
+    attribute :audience
+    attribute :language
+    attribute :location_code
+    # Articles planned per week; 0 turns planning off.
+    attribute :cadence_per_week
+    # Days a draft waits for review before it may auto-publish.
+    attribute :review_hold_days
+    attribute :auto_publish
+    # draft, standard or best.
+    attribute :image_tier
+    attribute :in_body_images
+    attribute :min_words
+    attribute :max_words
+    attribute :brand_voice_id
+    # product_blog, account or website.
+    attribute :target_kind
+    attribute :target_account_id
+    attribute :target_platform
+    attribute :website_url
+    attribute :has_website_secret
+    attribute :keyword_data_available
+    attribute :updated_at, :time
+  end
+
+  # What a settings update answers: the settings, plus the website secret on
+  # the one update that first set `website_url`.
+  class BlogSettingsUpdate < Model
+    attribute :settings, BlogSettings
+    attribute :website_secret
+  end
+
+  # The outcome of a test delivery to `website_url`.
+  class BlogWebsiteTest < Model
+    attribute :ok
+    attribute :status
+    attribute :error
+  end
+
+  class BlogKeyword < Model
+    attribute :id
+    attribute :keyword
+    attribute :search_volume
+    # 0 to 100.
+    attribute :difficulty
+    attribute :cpc
+    attribute :intent
+    # provider, user or agent.
+    attribute :source
+    # suggested, planned, written or dismissed.
+    attribute :status
+    # A date, YYYY-MM-DD.
+    attribute :planned_for
+    attribute :created_at, :time
+  end
+
+  class BlogArticleImage < Model
+    attribute :media_id
+    attribute :url
+    attribute :alt
+    # Index of the outline heading the image sits under; absent on the featured image.
+    attribute :position
+  end
+
+  # One article as a listing shows it, without the body.
+  class BlogArticle < Model
+    attribute :id
+    attribute :title
+    attribute :slug
+    attribute :keyword
+    attribute :excerpt
+    attribute :meta_title
+    attribute :meta_description
+    attribute :featured_image, BlogArticleImage
+    attribute :tags
+    attribute :word_count
+    # queued, writing, draft, scheduled, publishing, published, failed or rejected.
+    attribute :status
+    # plan, user or agent.
+    attribute :origin
+    attribute :review_until, :time
+    attribute :publish_at, :time
+    attribute :published_at, :time
+    attribute :published_url
+    attribute :error
+    attribute :created_at, :time
+    attribute :updated_at, :time
+  end
+
+  # An article with its body, outline and images.
+  class BlogArticleFull < BlogArticle
+    attribute :instructions
+    attribute :outline
+    # The research the writer worked from.
+    attribute :brief, :hash
+    attribute :body_markdown
+    attribute :body_html
+    attribute :images, [BlogArticleImage]
+  end
+
+  # The `data` of an `article.published` webhook. Image URLs stay fetchable
+  # for six hours; a receiver stores its own copy.
+  class BlogArticlePublished < Model
+    attribute :id
+    attribute :title
+    attribute :slug
+    attribute :excerpt
+    attribute :meta_title
+    attribute :meta_description
+    attribute :body_markdown
+    attribute :body_html
+    attribute :featured_image, BlogArticleImage
+    attribute :images, [BlogArticleImage]
+    attribute :tags
+    attribute :keyword
+    attribute :word_count
+    attribute :published_at, :time
+    attribute :published_url
+  end
+
+  # The envelope every FoPost webhook delivers, after its signature checked out.
+  class WebhookEvent < Model
+    attribute :event
+    attribute :data, :hash
+    attribute :timestamp, :time
+
+    # The typed payload of an `article.published` (or `article.test`) delivery.
+    def article
+      BlogArticlePublished.new(data)
+    end
+  end
 end

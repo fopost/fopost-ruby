@@ -8,6 +8,23 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `client.blog`: articles for a website. Settings (`get_settings`, `update_settings`,
+  `rotate_website_secret`, `test_website`), keywords (`list_keywords`, `plan_keywords`,
+  `add_keyword`, `update_keyword`, `delete_keyword`) and articles (`list_articles`,
+  `request_article`, `get_article`, `update_article`, `regenerate_article`, `publish_article`,
+  `reject_article`, `delete_article`), with the `BlogSettings`, `BlogSettingsUpdate`,
+  `BlogWebsiteTest`, `BlogKeyword`, `BlogArticle`, `BlogArticleFull` and `BlogArticleImage`
+  models and the `BLOG_ARTICLE_STATUSES`, `BLOG_KEYWORD_STATUSES` and `BLOG_TARGET_KINDS`
+  constants. Reads need `posts`; `plan_keywords`, `request_article` and `regenerate_article`
+  need `ai` and answer 402 on an empty balance; `publish_article` needs `publish` and answers
+  409 `no_target` with no target set.
+- `Fopost::Webhooks.verify(raw_body, headers, secret)` checks the signature on any FoPost
+  webhook over the raw bytes in constant time, preferring the timestamped signature (300 s
+  tolerance) and falling back to the plain body signature only when no timestamp was sent.
+  It returns a `WebhookEvent` (`event`, `data`, `timestamp`); `#article` types the
+  `article.published` payload as `BlogArticlePublished`. A bad signature raises
+  `Fopost::WebhookSignatureError`.
+
 - `InboxItem#moderation_status` carries the platform's own state for a comment
   (`published`, `held`, `spam`, `rejected`), and `InboxAccount#reconnect_required`
   flags an account connected before the inbox asked for a permission it needs.

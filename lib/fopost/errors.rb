@@ -56,6 +56,30 @@ module Fopost
   # 404 — no such resource, or it is outside the key's reach.
   class NotFoundError < Error; end
 
+  # 413 — the file is over the account's upload ceiling. {#max_file_bytes} is
+  # the largest file it may upload; {#upgrade_url} is where a bigger one is unlocked.
+  class FileTooLargeError < Error
+    def max_file_bytes
+      integer_field('max_file_bytes')
+    end
+
+    def file_bytes
+      integer_field('file_bytes')
+    end
+
+    def upgrade_url
+      value = body.is_a?(Hash) ? (body['upgrade_url'] || body[:upgrade_url]) : nil
+      value.is_a?(String) ? value : nil
+    end
+
+    private
+
+    def integer_field(name)
+      value = body.is_a?(Hash) ? (body[name] || body[name.to_sym]) : nil
+      value.is_a?(Integer) ? value : nil
+    end
+  end
+
   # 429 — rate limit exceeded. {#retry_after} is in seconds when the API sends it.
   class RateLimitError < Error
     attr_reader :retry_after
@@ -74,6 +98,7 @@ module Fopost
       402 => PaymentRequiredError,
       403 => PermissionDeniedError,
       404 => NotFoundError,
+      413 => FileTooLargeError,
       422 => ValidationError,
       429 => RateLimitError
     }.freeze

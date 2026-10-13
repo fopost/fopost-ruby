@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'json'
+
 module Fopost
   module Resources
     # `client.posts` — create, schedule, publish, and inspect posts.
@@ -68,8 +70,12 @@ module Fopost
       # `status` is "draft" or "scheduled"; a scheduled post needs `schedule_at`.
       # To send a post out now, create it and call {#publish}. `account_group_id`
       # adds that group's accounts to `accounts`, so `accounts` may be left empty.
+      #
+      # `files` (paths, IOs, or `{ filename:, io:/data:, mime_type: }` hashes) are
+      # stored in the library and attached to the first block. Files over the
+      # multipart ceiling go through direct upload; the result is the same.
       def create(workspace_id:, content:, accounts: [], account_group_id: nil, status: 'draft', schedule_at: nil,
-                 labels: nil, title: nil, summary: nil, content_type: nil, settings: nil, **extra)
+                 labels: nil, title: nil, summary: nil, content_type: nil, settings: nil, files: nil, **extra)
         body = {
           'workspace_id' => workspace_id,
           'status' => status,
@@ -89,6 +95,15 @@ module Fopost
         )
         body.merge!(stringify(extra))
 
+        parts = file_parts(files)
+        return Post.new(unwrap(http.post('/posts', body))) if parts.empty?
+
+        if multipart_fits?(parts, workspace_id)
+          fields = { 'post' => JSON.generate(body) }
+          return Post.new(unwrap(http.post_multipart('/posts', fields: fields, parts: multipart_parts(parts))))
+        end
+
+        attach_media(body['content'], upload_parts(workspace_id, parts))
         Post.new(unwrap(http.post('/posts', body)))
       end
 
@@ -96,7 +111,7 @@ module Fopost
       # to clear a field.
       def update(post_id, content: UNSET, accounts: UNSET, status: UNSET, schedule_at: UNSET,
                  labels: UNSET, title: UNSET, summary: UNSET, content_type: UNSET,
-                 settings: UNSET, **extra)
+                 settings: UNSET, files: nil, **extra)
         body = compact_unset(
           'content' => UNSET.equal?(content) ? UNSET : normalize_content(content),
           'accounts' => UNSET.equal?(accounts) ? UNSET : normalize_accounts(accounts),
@@ -110,6 +125,19 @@ module Fopost
         )
         body.merge!(stringify(extra))
 
+        parts = file_parts(files)
+        return Post.new(unwrap(http.put("/posts/#{post_id}", body))) if parts.empty?
+
+        if multipart_fits?(parts, nil)
+          fields = { 'post' => JSON.generate(body) }
+          multipart = http.put_multipart("/posts/#{post_id}", fields: fields, parts: multipart_parts(parts))
+          return Post.new(unwrap(multipart))
+        end
+
+        # The direct path needs the workspace, and the current blocks when none were given.
+        existing = get(post_id)
+        body['content'] = normalize_content(existing.content) unless body.key?('content')
+        attach_media(body['content'], upload_parts(existing.workspace_id, parts))
         Post.new(unwrap(http.put("/posts/#{post_id}", body)))
       end
 
@@ -181,6 +209,47 @@ module Fopost
 
       def stringify(hash)
         hash.each_with_object({}) { |(key, value), out| out[key.to_s] = value }
+      end
+
+      def file_parts(files)
+        Array(files).map { |file| FilePart.from(file) }
+      end
+
+      # One multipart request when every file fits its per-file ceiling.
+      def multipart_fits?(parts, workspace_id)
+        ceiling = begin
+          media.limits(workspace_id: workspace_id).multipart_max_file_bytes
+        rescue Error
+          nil
+        end
+        ceiling = Media::DEFAULT_MULTIPART_MAX_FILE_BYTES unless ceiling.is_a?(Integer)
+        parts.all? { |part| part.size <= ceiling }
+      end
+
+      def multipart_parts(parts)
+        parts.map do |part|
+          HTTP::Multipart::Part.new(name: 'files', filename: part.filename, mime_type: part.mime_type,
+                                    data: part.data)
+        end
+      end
+
+      def upload_parts(workspace_id, parts)
+        parts.map do |part|
+          item = media.upload_direct(workspace_id: workspace_id, filename: part.filename,
+                                     mime_type: part.mime_type, data: part.data)
+          compact_nil('type' => part.media_type, 'name' => item.name || part.filename, 'url' => item.url,
+                      'size' => item.size || part.size)
+        end
+      end
+
+      def attach_media(blocks, items)
+        blocks << {} if blocks.empty?
+        first = blocks.first
+        first['media'] = Array(first['media']) + items
+      end
+
+      def media
+        @media ||= Media.new(http)
       end
     end
   end

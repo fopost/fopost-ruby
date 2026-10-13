@@ -64,6 +64,21 @@ client.posts.create(
 
 `accounts` takes account ids, the `Fopost::SocialAccount` objects themselves, or hashes with an `id`.
 
+### Files on a post
+
+`files` attaches up to 5 files to the first block. Each is a path, an IO, or a hash of `filename:` plus `io:` or `data:` and `mime_type:` (a path or `File` guesses the type from its extension). The files land in the workspace library; the SDK picks the route by size and the result is the same either way: files at or under the multipart ceiling (`media.limits.multipart_max_file_bytes`, 100 MB) go in one multipart request, anything larger goes through direct upload first. `posts.update(id, files: ...)` appends to the first block the same way.
+
+```ruby
+client.posts.create(
+  workspace_id: workspace.id,
+  content: 'Launch day',
+  accounts: accounts.map(&:id),
+  files: ['launch.png', { filename: 'teaser.mp4', io: File.open('teaser.mp4', 'rb'), mime_type: 'video/mp4' }]
+)
+```
+
+A file over the account's ceiling raises `Fopost::FileTooLargeError` (413); `max_file_bytes` is the largest the account may upload and `upgrade_url` is where a bigger one is unlocked.
+
 ## Scheduling
 
 `status` is `"draft"` or `"scheduled"`; a scheduled post needs `schedule_at`. To send something out now, create it and call `publish`.
@@ -541,7 +556,17 @@ Responses relay Google's own shape as plain hashes. Reads need the `accounts` sc
 
 ## Media
 
-Direct uploads to the media library, in three steps: presign a slot, PUT the bytes to the returned URL with the returned headers (no API key), then complete. `upload_direct` does all three and returns the media item; a rejected PUT raises before `complete` is called.
+`limits` reads the upload ceilings for the account: `max_file_bytes` is the largest file by any route (100 MB up to 2 connected accounts, 400 MB up to 7, 2 GB up to 15, 5 GB beyond, or 5 GB with the Large Uploads add-on), `multipart_max_file_bytes` what one multipart request carries per file, `next_tier` what more accounts would unlock.
+
+```ruby
+limits = client.media.limits(workspace_id: workspace.id)
+limits.max_file_bytes            # => 419430400
+limits.multipart_max_file_bytes  # => 104857600
+limits.next_tier&.up_to_accounts # => 15
+limits.allowed_types
+```
+
+Direct uploads to the media library, in three steps: presign a slot, PUT the bytes to the returned URL with the returned headers (no API key), then complete. `upload_direct` does all three and returns the media item; a rejected PUT raises before `complete` is called. `size` may go up to `max_file_bytes`, and `presign` also takes `folder_id`, `origin`, `brand_role`, `brand_voice_id` and `person_consent`.
 
 ```ruby
 item = client.media.upload_direct(
@@ -554,8 +579,10 @@ item.id
 item.preview_url
 
 # Or step by step
-upload = client.media.presign(workspace_id: workspace.id, filename: 'logo.png', mime_type: 'image/png', size: 4096)
+upload = client.media.presign(workspace_id: workspace.id, filename: 'logo.png', mime_type: 'image/png', size: 4096,
+                              brand_role: 'logo')
 upload.upload_url   # PUT the bytes here with upload.headers
+upload.max_file_bytes
 client.media.complete(upload.upload_id)
 ```
 
@@ -610,6 +637,7 @@ Every non-2xx response raises. All of them are rescuable as `Fopost::Error`.
 | 402     | `Fopost::PaymentRequiredError`   |
 | 403     | `Fopost::PermissionDeniedError`  |
 | 404     | `Fopost::NotFoundError`          |
+| 413     | `Fopost::FileTooLargeError`      |
 | 429     | `Fopost::RateLimitError`         |
 | other   | `Fopost::Error`                  |
 
@@ -623,7 +651,7 @@ rescue Fopost::Error => e
 end
 ```
 
-`message` is what the API said; `to_s` adds the status and code, so an uncaught error still reports both. `e.body` holds the decoded response, and `Fopost::ValidationError#errors` carries per-field messages when the API sends them.
+`message` is what the API said; `to_s` adds the status and code, so an uncaught error still reports both. `e.body` holds the decoded response, and `Fopost::ValidationError#errors` carries per-field messages when the API sends them. `Fopost::FileTooLargeError` reads `max_file_bytes`, `file_bytes` and `upgrade_url` off the body.
 
 ## Configuration
 

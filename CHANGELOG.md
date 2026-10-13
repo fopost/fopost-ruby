@@ -8,6 +8,18 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `media.limits` reads the account's upload ceilings (`UploadLimits`: `max_file_bytes`,
+  `multipart_max_file_bytes`, `max_files_per_upload`, `next_tier`, `allowed_types`).
+- `posts.create` and `posts.update` take `files:` (paths, IOs, or
+  `{ filename:, io:/data:, mime_type: }` hashes). Files at or under the multipart ceiling go
+  in one multipart request; larger ones go through direct upload and are attached to the first
+  block.
+- `media.presign` and `upload_direct` take `folder_id`, `origin`, `brand_role`, `brand_voice_id`
+  and `person_consent`; `size` may go up to the account's `max_file_bytes`, which
+  `PresignedUpload#max_file_bytes` reports.
+- `Fopost::FileTooLargeError` for a 413 `file_too_large`, with `max_file_bytes`, `file_bytes`
+  and `upgrade_url`.
+
 - `InboxItem#moderation_status` carries the platform's own state for a comment
   (`published`, `held`, `spam`, `rejected`), and `InboxAccount#reconnect_required`
   flags an account connected before the inbox asked for a permission it needs.

@@ -12,6 +12,7 @@ require 'fopost/http/transport'
 require 'fopost/http/net_http_transport'
 require 'fopost/http/client'
 require 'fopost/client'
+require 'fopost/webhooks'
 
 # Official Ruby SDK for the FoPost API.
 #

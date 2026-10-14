@@ -48,6 +48,7 @@ lib/fopost/
   unset.rb                 UNSET sentinel for partial updates
   file_part.rb             normalises a path / IO / Hash into a file to upload
   version.rb
+  webhooks.rb             Fopost::Webhooks.verify, signature check for inbound deliveries
   http/
     transport.rb           the seam: a module defining #call(method:, url:, headers:, body:)
     net_http_transport.rb  default implementation over net/http
@@ -56,7 +57,7 @@ lib/fopost/
     response.rb            status + downcased headers + raw body, pre-decode
   resources/
     base.rb                unwrap/parse_list/compact_unset/iso8601 helpers
-    posts.rb accounts.rb account_groups.rb workspaces.rb labels.rb ai.rb inbox.rb contacts.rb ads.rb validate.rb media.rb
+    posts.rb accounts.rb account_groups.rb workspaces.rb labels.rb ai.rb inbox.rb contacts.rb ads.rb validate.rb media.rb blog.rb
 ```
 
 **Request flow.** `client.posts.create(...)` → `Resources::Posts` normalises content and
@@ -75,7 +76,7 @@ calls `unwrap` and hands the hash to a model.
   named fields (`Resources::Base#compact_unset`).
 - `Resources::Posts#each` / `#each_page` walk the list endpoint a page at a time.
 
-**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `contacts`, `broadcasts`, `sequences`, `ads`, `validate`, `media`.
+**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `contacts`, `broadcasts`, `sequences`, `ads`, `validate`, `media`, `blog`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
 `#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move` plus the Telegram connect-code and bot-commands methods and the Slack channels, members and identity methods. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, reply, hide, delete, like, pin, react, edit,

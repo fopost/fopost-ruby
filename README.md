@@ -421,6 +421,39 @@ client.sequences.enrollments(sequence.id).each do |e|
   puts "#{e.display_name} — step #{e.step}, #{e.status}"
 end
 ```
+## Blog
+
+Articles written for a website, as opposed to posts that go to a social network. Reads, settings and keyword edits need the `posts` scope; `plan_keywords`, `request_article` and `regenerate_article` spend credits and need `ai`; `publish_article` needs `publish`.
+
+```ruby
+article = client.blog.request_article(
+  workspace_id,
+  keyword: 'best trail running shoes',
+  instructions: 'Lead with a comparison table.'
+)
+article.status # => "queued"
+
+# Later, once it is a draft.
+full = client.blog.get_article(workspace_id, article.id)
+puts full.body_markdown
+client.blog.publish_article(workspace_id, article.id)
+```
+
+The Website target delivers every published article to `website_url` as a signed webhook. Setting the URL answers `website_secret` once; verify the raw request bytes with it, never a re-serialised body:
+
+```ruby
+# Rails: request.raw_post and request.headers; Rack: env['rack.input'].read and env
+event = Fopost::Webhooks.verify(raw_body, headers, ENV['FOPOST_WEBSITE_SECRET'])
+if event.event == 'article.published'
+  article = event.article # Fopost::BlogArticlePublished
+  store(article.slug, article.body_html, article.featured_image&.url)
+end
+rescue Fopost::WebhookSignatureError
+  head :unauthorized
+```
+
+`verify` prefers the timestamped `X-FoPost-Signature-256` header and rejects a timestamp more than 300 seconds off; it falls back to `X-FoPost-Signature` only when no timestamp was sent. The same helper verifies every other FoPost webhook.
+
 ## Knowledge
 
 What the workspace has told FoPost about itself. Retrieval over these sources

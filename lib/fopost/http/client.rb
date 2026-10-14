@@ -7,6 +7,7 @@ require 'uri'
 require 'fopost/errors'
 require 'fopost/version'
 require 'fopost/http/net_http_transport'
+require 'fopost/http/multipart'
 
 module Fopost
   module HTTP
@@ -45,14 +46,21 @@ module Fopost
       end
 
       # Send a request, retrying on 429, and return the decoded body.
-      def request(method, path, json: nil, params: nil)
+      # `multipart` is `{ fields: {name => string}, parts: [Multipart::Part] }`.
+      def request(method, path, json: nil, params: nil, multipart: nil)
         url = build_url(path, params)
-        body = json.nil? ? nil : JSON.generate(json)
+        request_headers = headers
+        body = nil
+        if multipart
+          body, request_headers['Content-Type'] = Multipart.encode(multipart[:fields] || {}, multipart[:parts] || [])
+        elsif !json.nil?
+          body = JSON.generate(json)
+        end
 
         attempt = 0
         loop do
           attempt += 1
-          response = @transport.call(method: method.to_s.upcase, url: url, headers: headers, body: body)
+          response = @transport.call(method: method.to_s.upcase, url: url, headers: request_headers, body: body)
 
           if response.status == 429 && attempt < @max_retries
             wait = retry_after_seconds(response)
@@ -82,6 +90,14 @@ module Fopost
 
       def delete(path, json = nil)
         request(:delete, path, json: json)
+      end
+
+      def post_multipart(path, fields:, parts:)
+        request(:post, path, multipart: { fields: fields, parts: parts })
+      end
+
+      def put_multipart(path, fields:, parts:)
+        request(:put, path, multipart: { fields: fields, parts: parts })
       end
 
       # PUT raw bytes to a presigned URL. Sends only the headers given, never

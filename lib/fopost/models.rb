@@ -21,6 +21,27 @@ module Fopost
     attribute :method
     attribute :headers, :hash
     attribute :expires_at, :time
+    attribute :max_file_bytes
+  end
+
+  # The next connected-accounts tier and the ceiling it unlocks.
+  class UploadLimitTier < Model
+    attribute :up_to_accounts
+    attribute :max_file_bytes
+  end
+
+  # What the workspace may upload: the ceiling by any route, the multipart
+  # ceiling per file, and how many files one request takes.
+  class UploadLimits < Model
+    attribute :max_file_bytes
+    attribute :source
+    attribute :connected_accounts
+    attribute :large_uploads_enabled
+    attribute :next_tier, UploadLimitTier
+    attribute :multipart_max_file_bytes
+    attribute :max_files_per_upload
+    attribute :direct_upload_available
+    attribute :allowed_types
   end
 
   # One block of a post. A thread is several blocks in order.

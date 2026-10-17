@@ -1948,20 +1948,33 @@ module Fopost
 
   # ─── Blog ─────────────────────────────────────────────────────────
 
-  # Where articles publish, how often they are planned and how long a draft
-  # waits for review. `website_secret` is never on this model; it is shown
-  # once, on the update that first sets `website_url`, or on a rotation.
+  # The last keyword research run.
+  class BlogPlanRun < Model
+    # queued, running, done or failed.
+    attribute :status
+    attribute :error
+    # New keywords the run found.
+    attribute :added
+    attribute :finished_at, :time
+  end
+
+  # Where articles publish, what the blog is for and how often it is planned.
+  # `website_secret` is never on this model; it is shown once, on the update
+  # that first sets `website_url`, or on a rotation.
   class BlogSettings < Model
     attribute :site_url
     attribute :topic
     attribute :audience
+    # traffic, leads, sales, signups or authority.
+    attribute :goal
+    attribute :focus_topics
+    attribute :avoid_topics
     attribute :language
     attribute :location_code
     # Articles planned per week; 0 turns planning off.
     attribute :cadence_per_week
-    # Days a draft waits for review before it may auto-publish.
+    # Days before its planned date that a picked keyword starts being written.
     attribute :review_hold_days
-    attribute :auto_publish
     # draft, standard or best.
     attribute :image_tier
     attribute :in_body_images
@@ -1974,6 +1987,8 @@ module Fopost
     attribute :target_platform
     attribute :website_url
     attribute :has_website_secret
+    # Nil before the first run.
+    attribute :plan_run, BlogPlanRun
     attribute :keyword_data_available
     attribute :updated_at, :time
   end
@@ -2006,6 +2021,8 @@ module Fopost
     attribute :status
     # A date, YYYY-MM-DD.
     attribute :planned_for
+    # Why the keyword serves the blog goal.
+    attribute :fit_reason
     attribute :created_at, :time
   end
 
@@ -2029,7 +2046,7 @@ module Fopost
     attribute :featured_image, BlogArticleImage
     attribute :tags
     attribute :word_count
-    # queued, writing, draft, scheduled, publishing, published, failed or rejected.
+    # queued, writing, draft, in_review, scheduled, publishing, published, failed or rejected.
     attribute :status
     # plan, user or agent.
     attribute :origin

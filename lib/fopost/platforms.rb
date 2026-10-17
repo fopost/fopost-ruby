@@ -53,6 +53,7 @@ module Fopost
     queued
     writing
     draft
+    in_review
     scheduled
     publishing
     published

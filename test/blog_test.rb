@@ -9,11 +9,13 @@ class BlogTest < Minitest::Test
     'siteUrl' => 'https://yourbrand.com',
     'topic' => 'Running shoes',
     'audience' => nil,
+    'goal' => 'leads',
+    'focusTopics' => 'Trail running gear',
+    'avoidTopics' => 'Competitor brands',
     'language' => 'en',
     'locationCode' => 2840,
     'cadencePerWeek' => 2,
     'reviewHoldDays' => 3,
-    'autoPublish' => false,
     'imageTier' => 'standard',
     'inBodyImages' => 2,
     'minWords' => 900,
@@ -24,6 +26,7 @@ class BlogTest < Minitest::Test
     'targetPlatform' => nil,
     'websiteUrl' => 'https://yourbrand.com/fopost/articles',
     'hasWebsiteSecret' => true,
+    'planRun' => { 'status' => 'done', 'error' => nil, 'added' => 12, 'finishedAt' => '2026-10-01T09:05:00.000Z' },
     'keywordDataAvailable' => true,
     'updatedAt' => '2026-10-01T09:00:00.000Z'
   }.freeze
@@ -38,6 +41,7 @@ class BlogTest < Minitest::Test
     'source' => 'provider',
     'status' => 'planned',
     'plannedFor' => '2026-10-14',
+    'fitReason' => 'Buyers compare shoes before they sign up.',
     'createdAt' => '2026-10-01T09:00:00.000Z'
   }.freeze
 
@@ -92,6 +96,26 @@ class BlogTest < Minitest::Test
     assert_equal Time.utc(2026, 10, 1, 9), settings.updated_at
   end
 
+  def test_get_settings_reads_the_goal_and_the_last_plan_run
+    transport.stub(:get, '/blog/settings', json: { 'data' => SETTINGS_FIXTURE })
+
+    settings = client.blog.get_settings('ws_1')
+
+    assert_equal 'leads', settings.goal
+    assert_equal 'Trail running gear', settings.focus_topics
+    assert_equal 'Competitor brands', settings.avoid_topics
+    assert_equal 'done', settings.plan_run.status
+    assert_equal 12, settings.plan_run.added
+    assert_equal Time.utc(2026, 10, 1, 9, 5), settings.plan_run.finished_at
+    refute_respond_to settings, :auto_publish
+  end
+
+  def test_get_settings_before_the_first_plan_run
+    transport.stub(:get, '/blog/settings', json: { 'data' => SETTINGS_FIXTURE.merge('planRun' => nil) })
+
+    assert_nil client.blog.get_settings('ws_1').plan_run
+  end
+
   def test_update_settings_sends_only_what_was_passed_and_surfaces_the_secret_once
     transport.stub(:patch, '/blog/settings',
                    json: { 'data' => SETTINGS_FIXTURE, 'websiteSecret' => 'whsec_first' })
@@ -104,6 +128,15 @@ class BlogTest < Minitest::Test
                    'cadencePerWeek' => 2, 'brandVoiceId' => nil }, transport.last.json)
     assert_equal 'whsec_first', result.website_secret
     assert_equal 'https://yourbrand.com/fopost/articles', result.settings.website_url
+  end
+
+  def test_update_settings_sends_the_goal_and_topics
+    transport.stub(:patch, '/blog/settings', json: { 'data' => SETTINGS_FIXTURE })
+
+    client.blog.update_settings('ws_1', goal: 'leads', focus_topics: 'Trail running gear', avoid_topics: nil)
+
+    assert_equal({ 'workspaceId' => 'ws_1', 'goal' => 'leads', 'focusTopics' => 'Trail running gear',
+                   'avoidTopics' => nil }, transport.last.json)
   end
 
   def test_update_settings_without_a_new_secret_answers_nil
@@ -148,6 +181,31 @@ class BlogTest < Minitest::Test
     assert_equal 1, keywords.size
     assert_equal 4400, keywords[0].search_volume
     assert_equal '2026-10-14', keywords[0].planned_for
+    assert_equal 'Buyers compare shoes before they sign up.', keywords[0].fit_reason
+  end
+
+  def test_suggest_seeds_posts_seeds_and_prompt_and_returns_the_terms
+    transport.stub(:post, '/blog/keywords/suggest',
+                   json: { 'data' => { 'seeds' => ['trail running shoes', 'waterproof trail shoes'] } })
+
+    seeds = client.blog.suggest_seeds('ws_1', seeds: ['trail running'], prompt: 'Focus on beginners')
+
+    assert_equal 'POST', transport.last.method
+    assert_equal({ 'workspaceId' => 'ws_1', 'seeds' => ['trail running'], 'prompt' => 'Focus on beginners' },
+                 transport.last.json)
+    assert_equal ['trail running shoes', 'waterproof trail shoes'], seeds
+
+    client.blog.suggest_seeds('ws_1')
+
+    assert_equal({ 'workspaceId' => 'ws_1' }, transport.last.json)
+  end
+
+  def test_suggest_seeds_on_an_empty_balance_is_payment_required
+    transport.stub(:post, '/blog/keywords/suggest', status: 402,
+                                                    json: { 'error' => 'insufficient_credits',
+                                                            'message' => 'Out of credits' })
+
+    assert_raises(Fopost::PaymentRequiredError) { client.blog.suggest_seeds('ws_1') }
   end
 
   def test_plan_keywords_posts_seeds_and_reads_the_queued_answer
@@ -276,6 +334,31 @@ class BlogTest < Minitest::Test
 
     assert_nil client.blog.delete_article('ws_1', 'art_1')
     assert_equal({ 'workspaceId' => 'ws_1' }, transport.last.query)
+  end
+
+  def test_submit_article_moves_it_to_review
+    transport.stub(:post, '/blog/articles/art_1/submit',
+                   json: { 'data' => ARTICLE_FIXTURE.merge('status' => 'in_review') })
+
+    article = client.blog.submit_article('ws_1', 'art_1')
+
+    assert_equal 'POST', transport.last.method
+    assert_equal '/v1/blog/articles/art_1/submit', transport.last.path
+    assert_equal({ 'workspaceId' => 'ws_1' }, transport.last.query)
+    assert_nil transport.last.body
+    assert_equal 'in_review', article.status
+    assert_includes Fopost::BLOG_ARTICLE_STATUSES, article.status
+  end
+
+  def test_submitting_an_article_in_the_wrong_state_is_a_conflict
+    transport.stub(:post, '/blog/articles/art_1/submit', status: 409,
+                                                         json: { 'error' => 'invalid_state',
+                                                                 'message' => 'Only a draft can be submitted' })
+
+    error = assert_raises(Fopost::Error) { client.blog.submit_article('ws_1', 'art_1') }
+
+    assert_equal 409, error.status
+    assert_equal 'invalid_state', error.code
   end
 
   def test_publish_without_a_target_is_a_conflict

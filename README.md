@@ -64,6 +64,21 @@ client.posts.create(
 
 `accounts` takes account ids, the `Fopost::SocialAccount` objects themselves, or hashes with an `id`.
 
+### Files on a post
+
+`files` attaches up to 5 files to the first block. Each is a path, an IO, or a hash of `filename:` plus `io:` or `data:` and `mime_type:` (a path or `File` guesses the type from its extension). The files land in the workspace library; the SDK picks the route by size and the result is the same either way: files at or under the multipart ceiling (`media.limits.multipart_max_file_bytes`, 100 MB) go in one multipart request, anything larger goes through direct upload first. `posts.update(id, files: ...)` appends to the first block the same way.
+
+```ruby
+client.posts.create(
+  workspace_id: workspace.id,
+  content: 'Launch day',
+  accounts: accounts.map(&:id),
+  files: ['launch.png', { filename: 'teaser.mp4', io: File.open('teaser.mp4', 'rb'), mime_type: 'video/mp4' }]
+)
+```
+
+A file over the account's ceiling raises `Fopost::FileTooLargeError` (413); `max_file_bytes` is the largest the account may upload and `upgrade_url` is where a bigger one is unlocked.
+
 ## Scheduling
 
 `status` is `"draft"` or `"scheduled"`; a scheduled post needs `schedule_at`. To send something out now, create it and call `publish`.
@@ -144,6 +159,46 @@ client.accounts.list_slack_channels(account_id)
 client.accounts.list_slack_members(account_id)
 client.accounts.get_slack_identity(account_id)
 client.accounts.update_slack_identity(account_id, username: 'Launch Bot', icon_emoji: ':rocket:')   # nil clears
+
+# Meta messaging settings. Ice breakers on Facebook Pages and Instagram; the menu and
+# greeting on Pages only. A network without a field answers 400.
+client.accounts.set_ice_breakers(account_id, [{ question: 'What are your hours?', payload: 'HOURS' }])
+client.accounts.set_persistent_menu(account_id, [{ locale: 'default',
+                                                   call_to_actions: [{ type: 'postback', title: 'Talk to Us',
+                                                                       payload: 'HUMAN' }] }])
+client.accounts.set_greeting(account_id, [{ text: 'Hi! Ask us anything.' }])
+
+# Is the network still delivering events for this account?
+subscription = client.accounts.get_webhook_subscription(account_id)
+client.accounts.resubscribe_webhook(account_id) unless subscription.subscribed
+```
+
+On a Discord bot connection, read and change the channel it posts to and manage the server itself:
+
+```ruby
+client.accounts.list_discord_channels(account_id)
+client.accounts.switch_discord_channel(account_id, 'c2')
+client.accounts.update_discord_identity(account_id, username: 'Release Bot')       # nil clears
+
+client.accounts.create_discord_event(account_id, name: 'Launch stream',
+                                                 start_time: '2026-10-01T18:00:00Z',
+                                                 end_time: '2026-10-01T19:00:00Z',
+                                                 location: 'https://yourbrand.com/live')
+
+members = client.accounts.list_discord_members(account_id, query: 'ada')
+role = client.accounts.create_discord_role(account_id, name: 'Beta')
+client.accounts.add_discord_member_role(account_id, role.id, members[0].id)
+client.accounts.send_discord_dm(account_id, members[0].id, 'Welcome aboard')
+```
+
+Read the numbers only an account's own network reports, in its own vocabulary — ad-break earnings, story
+taps, a retention curve, the search terms behind a listing. A network whose metric access has not been
+granted yet answers `503`:
+
+```ruby
+metrics = client.accounts.platform_metrics(account_id)
+metrics.account.metrics.each { |row| puts "#{row.label}: #{row.value}" }
+metrics.post.external_post_id
 ```
 
 ## Pagination
@@ -212,6 +267,24 @@ file = client.validate.media(url: 'https://example.com/a.png')
 puts file.ok ? file.type : file.issues.join(', ')
 ```
 
+## Activity
+
+What happened in a workspace, newest first. Needs the `analytics` scope.
+
+```ruby
+page = client.activity.list(workspace_id: workspace.id)
+page.events.each { |event| puts "#{event.time} #{event.actor.name}: #{event.summary}" }
+page.next_cursor  # pass back as cursor: for the next page
+```
+
+`kind: 'security'` is the audit log: members joining, leaving or changing role
+and access, and changes to two-step verification, passkeys, single sign-on and
+signed-in devices. Those rows are append-only and never expire.
+
+```ruby
+audit = client.activity.list(workspace_id: workspace.id, kind: 'security')
+```
+
 ## Inbox
 
 Comments, mentions and direct messages on connected accounts. Needs the `inbox` scope.
@@ -244,14 +317,183 @@ client.inbox.reply(item.id, media_ids: [media.id], quick_replies: %w[Yes No])
 client.inbox.start_conversation(account_id: account.id, handle: 'jordanvale', text: 'Hi!')
 client.inbox.start_conversation(comment_id: item.id, text: 'Sent you the details')
 client.inbox.set_typing(item.conversation_id, account_id: item.account.id)
+
+# Messenger hand-over: pass the thread to another Meta app, or take it back with no app id.
+client.inbox.handover(item.conversation_id, account_id: item.account.id, app_id: '263902037430900')
+client.inbox.handover(item.conversation_id, account_id: item.account.id)
 ```
+
+## Contacts
+
+The people behind the inbox. A contact is one human however many handles they write from: an inbound item files its author, a reply files whoever you answered, and both fold into whatever is already on file. Needs the `inbox` scope.
+
+```ruby
+page = client.contacts.list(workspace_id: workspace_id, search: 'ada')
+page.each { |contact| puts "#{contact.display_name} — #{contact.channels.size} handles" }
+puts page.meta.total
+
+contact = client.contacts.get(contact_id)
+
+# Folds into whoever already holds the first channel, so this cannot duplicate someone.
+contact = client.contacts.create(
+  workspace_id: workspace_id,
+  channels: [{ 'platform' => 'x', 'handle' => 'ada_writes' }],
+  display_name: 'Ada Okafor',
+  fields: { 'plan_tier' => 'Pro' }
+)
+
+client.contacts.update(contact.id, fields: { 'region' => nil })  # nil clears a field
+client.contacts.delete(contact.id)                               # the messages stay
+
+# The threads this person appears in, newest first.
+client.contacts.conversations(contact.id).each do |thread|
+  puts "#{thread.platform} #{thread.messages} messages, #{thread.received} in"
+end
+
+# platform and handle are required columns; any other column is a custom field key.
+result = client.contacts.import(workspace_id: workspace_id, csv: "platform,handle\nx,ada_writes")
+puts "#{result.created} created, #{result.merged} merged"
+puts result.unknown_columns.inspect
+
+# The columns your workspace keeps.
+fields = client.contacts.list_fields(workspace_id)
+field = client.contacts.create_field(workspace_id: workspace_id, key: 'plan_tier',
+                                     name: 'Plan Tier', type: 'select', options: %w[Free Pro])
+client.contacts.update_field(field.id, name: 'Tier')
+client.contacts.delete_field(field.id)   # removes every answer to it
+
+# Volume and median reply time per thread. Needs the `analytics` scope.
+report = client.contacts.conversation_analytics(days: 30, sort: 'slowest')
+puts report.conversations.first.median_response_minutes
+```
+
+## Broadcasts
+
+One message into every conversation you already have with a segment of your contacts. Nothing is sent into a closed messaging window: Messenger and Instagram take a business-initiated message only within 24 hours of the contact's last one, so recipients outside it come back skipped with `window_closed` rather than attempted. Telegram, Slack, Bluesky and Reddit have no window.
+
+Reading needs the `inbox` scope; `send` and `cancel` also need `publish`.
+
+```ruby
+page = client.broadcasts.list(workspace_id: workspace_id, status: 'sent')
+page.each { |b| puts "#{b.name} — #{b.counts.sent} sent, #{b.counts.skipped} skipped" }
+
+broadcast = client.broadcasts.create(
+  workspace_id: workspace_id,
+  account_id: account_id,
+  name: 'September check-in',
+  text: 'New colours just landed. Want a look?',
+  audience: { 'platforms' => ['instagram'] }
+)
+
+# The recipients count is how many contacts matched, not how many will be
+# messaged — the messaging window decides that.
+client.broadcasts.send(broadcast.id)
+
+# Who was skipped, and why.
+client.broadcasts.recipients(broadcast.id, status: 'skipped').each do |r|
+  puts "#{r.display_name}: #{r.skip_reason}"
+end
+```
+
+## Sequences
+
+A series of messages, each a delay after the one before, walked per enrolled contact. The messaging window applies to every step: one that comes due outside it is skipped rather than sent, and the enrollment carries on.
+
+```ruby
+sequence = client.sequences.create(
+  workspace_id: workspace_id,
+  account_id: account_id,
+  name: 'Welcome',
+  steps: [
+    { 'delay_hours' => 0, 'text' => 'Thanks for the follow — anything I can help with?' },
+    { 'delay_hours' => 48, 'text' => 'Here is what people usually ask us first.' }
+  ]
+)
+
+# By id, or by the same audience filter a broadcast takes.
+client.sequences.enroll(sequence.id, contact_ids: [contact_id])
+client.sequences.enroll(sequence.id, audience: { 'platforms' => ['telegram'] })
+
+# Nothing further fires for them.
+client.sequences.unenroll(sequence.id, [contact_id])
+
+client.sequences.enrollments(sequence.id).each do |e|
+  puts "#{e.display_name} — step #{e.step}, #{e.status}"
+end
+```
+## Blog
+
+Articles written for a website, as opposed to posts that go to a social network. Reads, settings and keyword edits need the `posts` scope; `plan_keywords`, `request_article` and `regenerate_article` spend credits and need `ai`; `publish_article` needs `publish`.
+
+```ruby
+article = client.blog.request_article(
+  workspace_id,
+  keyword: 'best trail running shoes',
+  instructions: 'Lead with a comparison table.'
+)
+article.status # => "queued"
+
+# Later, once it is a draft.
+full = client.blog.get_article(workspace_id, article.id)
+puts full.body_markdown
+client.blog.publish_article(workspace_id, article.id)
+```
+
+The Website target delivers every published article to `website_url` as a signed webhook. Setting the URL answers `website_secret` once; verify the raw request bytes with it, never a re-serialised body:
+
+```ruby
+# Rails: request.raw_post and request.headers; Rack: env['rack.input'].read and env
+event = Fopost::Webhooks.verify(raw_body, headers, ENV['FOPOST_WEBSITE_SECRET'])
+if event.event == 'article.published'
+  article = event.article # Fopost::BlogArticlePublished
+  store(article.slug, article.body_html, article.featured_image&.url)
+end
+rescue Fopost::WebhookSignatureError
+  head :unauthorized
+```
+
+`verify` prefers the timestamped `X-FoPost-Signature-256` header and rejects a timestamp more than 300 seconds off; it falls back to `X-FoPost-Signature` only when no timestamp was sent. The same helper verifies every other FoPost webhook.
+
+## Knowledge
+
+What the workspace has told FoPost about itself. Retrieval over these sources
+is what grounds a drafted inbox reply in your own answers instead of an
+invented one. Needs the `inbox` scope.
+
+```ruby
+# A source is an FAQ, a note, a page on your own site, or a plain-text/CSV
+# media item. Adding one queues it for indexing, so it comes back `pending`.
+faq = client.knowledge.create(
+  kind: 'faq',
+  title: 'Refunds and returns',
+  content: "Q: How long do refunds take?\nA: Up to 30 days from the request.",
+  workspace_id: workspace.id,
+)
+page = client.knowledge.create(kind: 'url', title: 'Shipping', url: 'https://yourbrand.com/shipping')
+
+client.knowledge.list(workspace_id: workspace.id).each do |source|
+  puts "#{source.title} #{source.status} #{source.chunk_count}"
+end
+
+# Editing the text or the URL re-indexes the source on its own; a page you
+# changed on your own site needs an explicit re-read.
+client.knowledge.update(faq.id, title: 'Refunds')
+client.knowledge.sync(page.id)
+client.knowledge.delete(page.id)
+
+# Empty is the honest answer when nothing stored answers the question.
+client.knowledge.search('how long do refunds take?', top_k: 3).each do |match|
+  puts "#{match.source_title}: #{match.text}"
+end
+```
+
 
 ## Ads
 
-Meta ads, campaigns, creatives, audiences, insights and lead forms. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
+Ads, campaigns, creatives, audiences, insights and lead forms on a connected network. `providers` lists the networks a deployment knows and what each supports. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
 
 ```ruby
-url = client.ads.authorize_meta(workspace_id: workspace.id)   # finish the Meta login in a browser
+url = client.ads.authorize('meta', workspace_id: workspace.id)   # finish the login in a browser
 source = client.ads.sources(workspace_id: workspace.id).first
 
 ad = client.ads.boost(
@@ -311,13 +553,53 @@ page = client.ads.leads_feed(workspace_id: workspace.id, cursor: page.next_curso
 | Ad sets | `create_ad_set`, `get_ad_set`, `update_ad_set`, `delete_ad_set`, `duplicate_ad_set` |
 | Network ads | `create_network_ad`, `get_network_ad`, `update_network_ad`, `delete_network_ad`, `duplicate_network_ad`, `bulk_set_status` |
 | Creatives | `creatives`, `create_creative`, `get_creative`, `delete_creative` |
-| Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `estimate_reach` |
+| Networks | `providers`, `authorize` |
+| Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `add_audience_companies`, `estimate_reach` |
+| Forecasts | `bid_pricing`, `supply_forecast` |
+| Conversions | `conversion_rules`, `create_conversion_rule`, `get_conversion_rule`, `update_conversion_rule`, `delete_conversion_rule`, `attach_conversion_rule`, `detach_conversion_rule`, `conversion_metrics`, `send_conversion_events` |
+| Ad library | `ad_library` |
 | Insights | `insights`, `ad_insights` |
 | Leads | `get_lead_form`, `archive_lead_form`, `leads_feed`, `lead_pages`, `subscribe_lead_page`, `unsubscribe_lead_page` |
+| Goals | `goals` |
+| Catalogs | `catalogs`, `create_catalog`, `catalog`, `update_catalog`, `delete_catalog`, `catalog_products`, `write_catalog_products`, `product_feeds`, `create_product_feed`, `delete_product_feed`, `feed_uploads`, `start_feed_upload`, `product_sets`, `create_product_set`, `update_product_set`, `delete_product_set` |
+| Reach and frequency | `reach_frequency`, `create_reach_frequency`, `reach_frequency_prediction`, `reserve_reach_frequency`, `cancel_reach_frequency` |
+| Ad Library | `library` |
+| Partnership ads | `partnership_creators`, `request_partnership`, `revoke_partnership` |
+| Account settings | `account_activity`, `labels`, `create_label`, `update_label`, `delete_label`, `apply_label`, `studies`, `create_study`, `study`, `delete_study`, `ios_campaign_limits`, `high_demand_periods`, `create_high_demand_period`, `delete_high_demand_period`, `value_rule_sets`, `create_value_rule_set`, `delete_value_rule_set` |
+
+## Google Business Profile
+
+Manage a connected Business Profile location: the profile, attributes, food menus, services, photos, action links, verification and performance.
+
+```ruby
+location = client.google_business.get_location('acc_1')
+client.google_business.update_location('acc_1', title: 'Corner Bakery', website_uri: 'https://yourbrand.com')
+
+# Photos come from your media library, JPEG or PNG.
+client.google_business.add_media('acc_1', media_id: media_id, category: 'INTERIOR')
+
+client.google_business.create_place_action('acc_1', uri: 'https://yourbrand.com/book',
+                                                    place_action_type: 'APPOINTMENT')
+
+metrics = client.google_business.get_performance('acc_1', start_date: '2026-09-01', end_date: '2026-09-30')
+terms = client.google_business.get_search_keywords('acc_1', start_date: '2026-08-01', end_date: '2026-09-01')
+```
+
+Responses relay Google's own shape as plain hashes. Reads need the `accounts` scope, writes `publish` as well. Every call raises a 503 `configuration_error` until Google grants the deployment Business Profile API access.
 
 ## Media
 
-Direct uploads to the media library, in three steps: presign a slot, PUT the bytes to the returned URL with the returned headers (no API key), then complete. `upload_direct` does all three and returns the media item; a rejected PUT raises before `complete` is called.
+`limits` reads the upload ceilings for the account: `max_file_bytes` is the largest file by any route (100 MB up to 2 connected accounts, 400 MB up to 7, 2 GB up to 15, 5 GB beyond, or 5 GB with the Large Uploads add-on), `multipart_max_file_bytes` what one multipart request carries per file, `next_tier` what more accounts would unlock.
+
+```ruby
+limits = client.media.limits(workspace_id: workspace.id)
+limits.max_file_bytes            # => 419430400
+limits.multipart_max_file_bytes  # => 104857600
+limits.next_tier&.up_to_accounts # => 15
+limits.allowed_types
+```
+
+Direct uploads to the media library, in three steps: presign a slot, PUT the bytes to the returned URL with the returned headers (no API key), then complete. `upload_direct` does all three and returns the media item; a rejected PUT raises before `complete` is called. `size` may go up to `max_file_bytes`, and `presign` also takes `folder_id`, `origin`, `brand_role`, `brand_voice_id` and `person_consent`.
 
 ```ruby
 item = client.media.upload_direct(
@@ -330,8 +612,10 @@ item.id
 item.preview_url
 
 # Or step by step
-upload = client.media.presign(workspace_id: workspace.id, filename: 'logo.png', mime_type: 'image/png', size: 4096)
+upload = client.media.presign(workspace_id: workspace.id, filename: 'logo.png', mime_type: 'image/png', size: 4096,
+                              brand_role: 'logo')
 upload.upload_url   # PUT the bytes here with upload.headers
+upload.max_file_bytes
 client.media.complete(upload.upload_id)
 ```
 
@@ -365,6 +649,44 @@ client.whatsapp.flow_responses(account_id)
 # Groups are invite-only: there is no endpoint that adds a participant.
 group = client.whatsapp.create_group(account_id, subject: 'Launch crew')
 client.whatsapp.group_invite_link(account_id, group.id)
+## Analytics
+
+```ruby
+# How long a post keeps earning, from the repeated readings of each post
+decay = client.analytics.decay(days: 30)
+puts decay.half_life_bucket # => "1h_3h"
+
+# Whether posting more earned more
+cadence = client.analytics.frequency(days: 90)
+puts cadence.best&.label # => "3-5 a week"
+
+# Every reading held for one post, with what moved between them
+timeline = client.analytics.timeline(post.id)
+
+# Mirror the metrics into your own store, without refetching everything
+cursor = nil
+loop do
+  page = client.analytics.changes(since: cursor)
+  save(page.changes)
+  break unless page.has_more && page.cursor
+
+  cursor = page.cursor
+end
+
+# Refresh one post now instead of waiting for the next collection run
+client.analytics.collect_post(post.id)
+
+# Posts on the account that never went out through FoPost
+client.analytics.native_posts(accounts.first.id).each do |native|
+  puts "#{native.permalink} #{native.metrics.engagements}"
+end
+```
+
+A post is addressed by its FoPost id or by its permalink, so a post made by
+hand on the network works the same way:
+
+```ruby
+client.analytics.timeline('https://x.com/acme/status/1')
 ```
 
 ## Errors
@@ -378,6 +700,7 @@ Every non-2xx response raises. All of them are rescuable as `Fopost::Error`.
 | 402     | `Fopost::PaymentRequiredError`   |
 | 403     | `Fopost::PermissionDeniedError`  |
 | 404     | `Fopost::NotFoundError`          |
+| 413     | `Fopost::FileTooLargeError`      |
 | 429     | `Fopost::RateLimitError`         |
 | other   | `Fopost::Error`                  |
 
@@ -391,7 +714,7 @@ rescue Fopost::Error => e
 end
 ```
 
-`message` is what the API said; `to_s` adds the status and code, so an uncaught error still reports both. `e.body` holds the decoded response, and `Fopost::ValidationError#errors` carries per-field messages when the API sends them.
+`message` is what the API said; `to_s` adds the status and code, so an uncaught error still reports both. `e.body` holds the decoded response, and `Fopost::ValidationError#errors` carries per-field messages when the API sends them. `Fopost::FileTooLargeError` reads `max_file_bytes`, `file_bytes` and `upgrade_url` off the body.
 
 ## Configuration
 
@@ -450,6 +773,22 @@ post['some_new_field']    # by either spelling
 
 That means a field added server-side never breaks an older client.
 
+## Chatbots and the inbox
+
+The [chat adapter](https://fopost.com/docs/sdks/chat-adapter) turns the FoPost inbox into one send/receive channel for a chatbot
+framework. It ships in the TypeScript and Python SDKs. There is no dedicated adapter here and no
+API change behind it, so the same loop is three pieces with this client:
+
+1. **Verify** the `inbox.message_received` webhook. The payload is ids only, on purpose, so
+   nothing a customer wrote sits in your logs. The [signing scheme](https://fopost.com/docs/webhooks/verification)
+   is HMAC-SHA256 over `{timestamp}.{body}`, refused past a five minute tolerance.
+2. **Read** the item back with `client.inbox.list(workspace_id:, type: 'dm', account_id:)`, filtered to the payload's
+   `accountId` and matched on its `itemId`.
+3. **Answer** with `client.inbox.reply(item.id, text: text)`, or open a thread with
+   `client.inbox.start_conversation(account_id:, handle:, text:)`.
+
+Reading needs the `inbox` scope; answering needs `publish` as well.
+
 ## Development
 
 ```bash
@@ -463,3 +802,30 @@ Tests run against a stubbed transport, so nothing touches the network.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+### Google Ads
+
+Campaigns, ad groups, ads, audiences and insights are on `client.ads` and dispatch by
+connection. What only Google has is under `client.ads.google`:
+
+```ruby
+keywords = client.ads.google.keywords(
+  connection_id: 'c4d5e6f7-…',
+  customer_id: '1234567890'
+)
+
+client.ads.google.create_keyword(
+  workspace_id: '7d2b8c11-…',
+  connection_id: 'c4d5e6f7-…',
+  customer_id: '1234567890',
+  ad_group_id: '1234567890~adGroup~77',
+  text: 'running shoes',
+  match_type: 'EXACT'
+)
+```
+
+Also `keyword_ideas`, `keyword_metrics`, `search_terms`, `bid_strategies`, `ad_schedule`
+and `set_ad_schedule`, the negative keyword lists, `assets` and `asset_groups`,
+`local_services_leads`, the conversion methods, and `query` for a raw read-only GAQL
+SELECT. Changes need the `publish` scope as well as `ads`; `customer_id` has to name an
+account the connection's grant reaches.

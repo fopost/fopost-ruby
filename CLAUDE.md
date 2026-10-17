@@ -46,15 +46,18 @@ lib/fopost/
   model.rb models.rb       response model base and the concrete models
   platforms.rb             platform and status constants
   unset.rb                 UNSET sentinel for partial updates
+  file_part.rb             normalises a path / IO / Hash into a file to upload
   version.rb
+  webhooks.rb             Fopost::Webhooks.verify, signature check for inbound deliveries
   http/
     transport.rb           the seam: a module defining #call(method:, url:, headers:, body:)
     net_http_transport.rb  default implementation over net/http
+    multipart.rb           multipart/form-data body encoder for file uploads on posts
     client.rb              headers, URL building, JSON coding, retry loop, decode, unwrap
     response.rb            status + downcased headers + raw body, pre-decode
   resources/
     base.rb                unwrap/parse_list/compact_unset/iso8601 helpers
-    posts.rb accounts.rb account_groups.rb workspaces.rb labels.rb ai.rb inbox.rb ads.rb validate.rb media.rb
+    posts.rb accounts.rb account_groups.rb workspaces.rb labels.rb ai.rb inbox.rb contacts.rb ads.rb validate.rb media.rb blog.rb
 ```
 
 **Request flow.** `client.posts.create(...)` → `Resources::Posts` normalises content and
@@ -73,7 +76,7 @@ calls `unwrap` and hands the hash to a model.
   named fields (`Resources::Base#compact_unset`).
 - `Resources::Posts#each` / `#each_page` walk the list endpoint a page at a time.
 
-**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `ads`, `validate`, `media`.
+**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `contacts`, `broadcasts`, `sequences`, `ads`, `validate`, `media`, `blog`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
 `#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move` plus the Telegram connect-code and bot-commands methods and the Slack channels, members and identity methods. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, reply, hide, delete, like, pin, react, edit,
@@ -83,8 +86,10 @@ and typing also need `publish`) but not
 the campaign tree (campaigns, ad sets, network ads), creatives, audiences, reach, insights,
 targeting search, lead forms and the leads feed; `boost`, `create`, `set_status`, `delete`,
 `bulk_set_status` and the campaign/ad set/network ad writes also need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and
-`/validate/media`. `media` (scope `posts`) is direct upload only: `presign`, `complete` and
-`upload_direct`, which PUTs the bytes through `HTTP::Client#put_raw` with no API key. There is
+`/validate/media`. `media` (scope `posts`) is `limits` plus direct upload: `presign`, `complete` and
+`upload_direct`, which PUTs the bytes through `HTTP::Client#put_raw` with no API key.
+`posts.create`/`update` take `files:` and pick multipart (`HTTP::Client#post_multipart`, body
+built by `HTTP::Multipart`) or direct upload by size against `media.limits`. There is
 no `communities`, `webhooks`, `analytics`, or `automations` resource; reach those through
 `Fopost::Client#request` until one is added.
 
@@ -117,7 +122,7 @@ no `communities`, `webhooks`, `analytics`, or `automations` resource; reach thos
   `ValidationError#errors` read off that body. `Error#to_s` renders `[<status> (<code>)] <message>`.
 - **Error map** (`ErrorFactory::BY_STATUS`): 400/422 `ValidationError` · 401 `AuthenticationError` ·
   402 `PaymentRequiredError` · 403 `PermissionDeniedError` · 404 `NotFoundError` ·
-  429 `RateLimitError` (has `#retry_after`) · **everything else, 5xx included, falls back to
+  413 `FileTooLargeError` (has `#max_file_bytes`) · 429 `RateLimitError` (has `#retry_after`) · **everything else, 5xx included, falls back to
   `Fopost::Error` itself** — there is no dedicated server-error class. Everything is rescuable
   as `Fopost::Error`; `ConfigurationError` is a plain `StandardError` and is not.
 - **Rate-limit headers** (`X-RateLimit-Limit`/`-Remaining`/`-Reset`) are not surfaced on models

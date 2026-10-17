@@ -423,7 +423,23 @@ end
 ```
 ## Blog
 
-Articles written for a website, as opposed to posts that go to a social network. Reads, settings and keyword edits need the `posts` scope; `plan_keywords`, `request_article` and `regenerate_article` spend credits and need `ai`; `publish_article` needs `publish`.
+Articles written for a website, as opposed to posts that go to a social network. Reads, settings, keyword edits and `submit_article` need the `posts` scope; `suggest_seeds`, `plan_keywords`, `request_article` and `regenerate_article` spend credits and need `ai`; `publish_article` needs `publish`.
+
+Planning starts from the blog's goal. Suggest search terms, research them, then pick the keywords worth writing; a picked keyword takes the next free date on the calendar.
+
+```ruby
+client.blog.update_settings(workspace_id, goal: 'leads', focus_topics: 'Trail running gear')
+
+seeds = client.blog.suggest_seeds(workspace_id, prompt: 'Beginners, not racers')
+client.blog.plan_keywords(workspace_id, seeds: seeds)
+client.blog.get_settings(workspace_id).plan_run&.status # => "done"
+
+client.blog.list_keywords(workspace_id, status: 'suggested').first(3).each do |keyword|
+  client.blog.update_keyword(workspace_id, keyword.id, status: 'planned')
+end
+```
+
+Every article is approved before it publishes: submit a draft for review, then publish it or give it a `publish_at`.
 
 ```ruby
 article = client.blog.request_article(
@@ -436,6 +452,7 @@ article.status # => "queued"
 # Later, once it is a draft.
 full = client.blog.get_article(workspace_id, article.id)
 puts full.body_markdown
+client.blog.submit_article(workspace_id, article.id) # => status "in_review"
 client.blog.publish_article(workspace_id, article.id)
 ```
 

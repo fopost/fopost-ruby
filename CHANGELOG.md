@@ -4,6 +4,25 @@ All notable changes to this gem are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gem follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `inbox.repost`, `unrepost`, `bookmark` and `unbookmark` on X items (`inbox` scope, plus
+  `publish`); `InboxItem` reads `reposted`, `bookmarked`, `can_repost` and `can_bookmark`.
+- `accounts.follow_x_user` and `unfollow_x_user` (`inbox` scope, plus `publish`), answering
+  an `XFollowResult`.
+- `accounts.x_post` and `search_x_posts` read X posts live with the account's token (`inbox`
+  scope); search answers an `XSearchPage` with `posts` and `next_token`.
+- X's own pay-per-use balance being spent answers `402 platform_balance_spent`, raised as
+  `PaymentRequiredError`.
+
+### Changed
+
+- X accounts connected before this release must be reconnected for repost, bookmark and
+  follow: the grant now asks for bookmark and follow permissions, and an older token answers
+  `409 reconnect_required`.
+
 ## [0.3.0] - 2026-10-18
 
 ### Added

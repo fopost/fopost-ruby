@@ -93,7 +93,25 @@ client.posts.create(
 )
 ```
 
-`schedule_at` accepts a `Time`, a `DateTime`, or an ISO 8601 string.
+`schedule_at` accepts a `Time`, a `DateTime`, or an ISO 8601 string. `schedule: 'queue'` lands the post in the next free slot of the posting queue instead (see below).
+
+### Posting queue
+
+Weekly slots a post takes when created with `schedule: 'queue'`. `account_id` nil makes a slot shared by every account.
+
+```ruby
+client.queue.create_slot(workspace_id: workspace.id, weekday: 1, time: '09:00', timezone: 'Europe/Zagreb')
+client.queue.slots(workspace_id: workspace.id)
+client.queue.next(workspace_id: workspace.id)              # => Time, or nil without slots
+client.queue.preview(workspace_id: workspace.id, count: 5) # => [Time, ...]
+
+changed = client.queue.update_slot(slot.id, time: '10:00')
+changed.moved  # posts that moved with the slot
+client.queue.delete_slot(slot.id)
+
+client.posts.create(workspace_id: workspace.id, content: 'Queued', accounts: [account.id],
+                    status: 'scheduled', schedule: 'queue')
+```
 
 ## Posts
 
@@ -106,6 +124,7 @@ client.posts.publish(post_id)     # queue delivery to every targeted account
 client.posts.cancel(post_id)      # cancel what has not gone out yet
 client.posts.retry(post_id)       # retry only the deliveries that failed
 client.posts.preflight(post_id)   # per-account blockers, without publishing
+client.posts.unpublish(post_id)   # take a published post down everywhere (publish scope)
 
 client.posts.deliveries(post_id).each { |d| puts "#{d.platform}: #{d.status}" }
 ```
@@ -115,6 +134,59 @@ client.posts.deliveries(post_id).each { |d| puts "#{d.platform}: #{d.status}" }
 ```ruby
 client.posts.update(post_id, schedule_at: nil)   # sends {"schedule_at": null}
 client.posts.update(post_id, title: 'Renamed')   # sends {"title": "Renamed"}
+```
+
+### Bulk import
+
+Check a CSV row by row, then create every valid row as a post:
+
+```ruby
+check = client.posts.validate_bulk_import(workspace_id: workspace.id, file: 'posts.csv')
+check.invalid_rows
+check.rows.each { |row| puts "#{row.row}: #{row.errors.join(', ')}" unless row.errors.empty? }
+
+batch = client.posts.commit_bulk_import(workspace_id: workspace.id, file: 'posts.csv')
+batch.created
+```
+
+### Workspaces and labels
+
+```ruby
+workspace = client.workspaces.create(name: 'Acme', type: 'BRAND', timezone: 'UTC')
+client.workspaces.update(workspace.id, require_approval: true)
+client.workspaces.delete(workspace.id)
+
+label = client.labels.create(workspace_id: workspace.id, name: 'Launch', color: '#4F46E5')
+client.labels.get(label.id)
+client.labels.update(label.id, name: 'Relaunch', color: '#4F46E5')
+client.labels.delete(label.id)
+```
+
+### Hosted connect links
+
+A URL your own user opens to connect their account to your workspace. Needs the `accounts` scope.
+
+```ruby
+session = client.connect_sessions.create(
+  workspace_id: workspace.id,
+  external_user_id: 'user-42',
+  platforms: %w[twitter linkedin],
+  redirect_url: 'https://yourbrand.com/connected',
+  branding: { name: 'Your Brand', logo_url: 'https://yourbrand.com/logo.png' }
+)
+session.url  # send this to the person
+
+client.connect_sessions.get(session.id).account_id  # set once the link was used
+```
+
+### X communities
+
+```ruby
+client.accounts.sync_communities(account.id)                 # pull memberships from X
+client.accounts.list_communities(account.id)
+client.accounts.search_communities(account.id, q: 'ruby')
+added = client.accounts.add_community(account.id, community_id: '1234')
+client.accounts.remove_community(account.id, added.id)       # the row id, not X's
 ```
 
 ## Account groups
@@ -286,6 +358,15 @@ What happened in a workspace, newest first. Needs the `analytics` scope.
 page = client.activity.list(workspace_id: workspace.id)
 page.events.each { |event| puts "#{event.time} #{event.actor.name}: #{event.summary}" }
 page.next_cursor  # pass back as cursor: for the next page
+```
+
+The API request log (`workspaces` scope) reads the same way, with `before:` as the cursor:
+
+```ruby
+logs = client.logs.list(workspace_id: workspace.id, status: 'failed', days: 7)
+logs.logs.each { |row| puts "#{row.time} #{row.method} #{row.route} #{row.status_code}" }
+logs.summary.errors
+logs.next_cursor  # pass back as before: for the next page
 ```
 
 `kind: 'security'` is the audit log: members joining, leaving or changing role
@@ -651,6 +732,17 @@ Responses relay Google's own shape as plain hashes. Reads need the `accounts` sc
 
 ## Media
 
+The library, one page at a time, plus an upload through the API and a delete:
+
+```ruby
+page = client.media.list(workspace_id: workspace.id, type: 'image', brand_role: 'logo')
+page.each { |item| puts "#{item.name} #{item.preview_url}" }
+page.meta.total_pages
+
+items = client.media.upload(['logo.png', 'hero.mp4'], workspace_id: workspace.id)
+client.media.delete(items.first.id)
+```
+
 `limits` reads the upload ceilings for the account: `max_file_bytes` is the largest file by any route (100 MB up to 2 connected accounts, 400 MB up to 7, 2 GB up to 15, 5 GB beyond, or 5 GB with the Large Uploads add-on), `multipart_max_file_bytes` what one multipart request carries per file, `next_tier` what more accounts would unlock.
 
 ```ruby
@@ -714,6 +806,19 @@ client.whatsapp.group_invite_link(account_id, group.id)
 ## Analytics
 
 ```ruby
+# Totals and deltas across the workspace, with per-account follower history
+overview = client.analytics.overview(workspace_id: workspace.id, days: 30)
+puts overview.total_followers
+
+client.analytics.time_series(days: 30)          # one point per day
+client.analytics.top_posts(limit: 10)           # ranked by engagement
+client.analytics.labels(days: 30)               # per-label roll-up
+client.analytics.posts_table(page: 1)           # posts with delivery breakdown
+client.analytics.posting_streak                 # 365 days of activity
+client.analytics.demographics(audience: 'followers')
+client.analytics.inbox(days: 30)                # volume, response time, busiest hours
+client.analytics.collect(workspace_id: workspace.id)  # collect now instead of waiting
+
 # How long a post keeps earning, from the repeated readings of each post
 decay = client.analytics.decay(days: 30)
 puts decay.half_life_bucket # => "1h_3h"
@@ -749,6 +854,52 @@ hand on the network works the same way:
 
 ```ruby
 client.analytics.timeline('https://x.com/acme/status/1')
+```
+
+## Webhooks
+
+Outbound webhooks and their delivery log (`webhooks` scope). Verifying an inbound delivery is `Fopost::Webhooks.verify`, further down.
+
+```ruby
+webhook = client.webhooks.create(workspace_id: workspace.id, url: 'https://yourbrand.com/hooks/fopost',
+                                 events: ['post.published'], name: 'CRM')
+webhook.secret  # answered once, here
+
+client.webhooks.list
+client.webhooks.update(webhook.id, active: false)
+client.webhooks.test(webhook.id)
+
+client.webhooks.deliveries(webhook.id, status: 'failed').each do |delivery|
+  client.webhooks.redeliver(webhook.id, delivery.id)
+end
+client.webhooks.get_delivery(webhook.id, delivery_id).payload
+client.webhooks.delete(webhook.id)
+```
+
+## Automations
+
+Trigger-driven workflows, their saved versions and their runs (`automations` scope). Bodies are written in snake_case and sent camelCase.
+
+```ruby
+automation = client.automations.create(
+  workspace_id: workspace.id,
+  name: 'RSS to X',
+  trigger_type: 'rss_feed',
+  trigger_config: { url: 'https://yourbrand.com/feed.xml' },
+  steps: [{ action_type: 'publish', action_config: { account_ids: [account.id] } }]
+)
+
+client.automations.list
+client.automations.stats
+client.automations.update(automation.id, active: false)
+
+client.automations.versions(automation.id).each { |v| puts "#{v.version} #{v.note}" }
+client.automations.get_version(automation.id, 2).graph
+client.automations.restore_version(automation.id, 2)
+
+client.automations.runs(automation.id).each { |run| puts "#{run.id} #{run.status}" }
+client.automations.get_run(automation.id, run_id).logs
+client.automations.delete(automation.id)
 ```
 
 ## Errors
@@ -801,8 +952,8 @@ A `429` is retried automatically, waiting for the interval the API asks for in `
 `client.request` reaches anything in the API, with the same auth, retries, and error handling:
 
 ```ruby
-client.request(:get, '/analytics/overview', params: { 'workspace_id' => workspace.id })
-client.request(:post, '/webhooks', json: { 'url' => 'https://example.com/hook', 'events' => ['post.published'] })
+client.request(:get, '/some/new/endpoint', params: { 'workspace_id' => workspace.id })
+client.request(:post, '/some/new/endpoint', json: { 'name' => 'value' })
 ```
 
 ## Swapping the HTTP stack

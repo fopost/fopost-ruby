@@ -4,10 +4,33 @@ All notable changes to this gem are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gem follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-18
 
 ### Added
 
+- `inbox.like`, `unlike`, `pin`, `unpin`, `react`, `edit_comment`, `start_conversation` and
+  `set_typing` (`inbox` scope, plus `publish`).
+- `inbox.reply` takes `media_ids` and `quick_replies`; `text` is optional when `media_ids` is given.
+- `InboxItem` reads `liked`, `pinned`, `reaction`, `edited_at` and the `can_like`, `can_pin`,
+  `can_edit`, `can_react`, `can_send_media`, `can_quick_reply` and `can_private_reply` flags;
+  `InboxAccount` reads `can_start_conversation`.
+- `validate` resource: `post`, `length` and `media` preflight checks (`posts` scope).
+- `account_groups` resource: `list`, `create`, `get`, `update`, `delete` and `set_members`
+  (`accounts` scope).
+- `accounts.update` renames an account and `accounts.move` moves it to another workspace;
+  `accounts.list` takes `group_id`, and `SocialAccount#platform_name` is read.
+- `posts.create` takes `account_group_id`.
+- `media.presign`, `complete` and `upload_direct` upload a file straight to storage instead of
+  through the API (`posts` scope).
+- `ads` campaign tree: `account_tree`, and create, get, update, delete and duplicate for
+  campaigns, ad sets and network ads, plus `bulk_set_status` (`ads` scope; writes also need
+  `publish`).
+- `ads` creatives (`creatives`, `create_creative`, `get_creative`, `delete_creative`), audiences
+  (`get_audience`, `update_audience`, `delete_audience`, `add_audience_users`), `estimate_reach`,
+  `insights` and `ad_insights`.
+- `ads` lead forms and leads: `get_lead_form`, `archive_lead_form`, `leads_feed` (cursor
+  paginated), `lead_pages`, `subscribe_lead_page` and `unsubscribe_lead_page`.
+- `ads.create` takes `url_tags`.
 - `blog.suggest_seeds(workspace_id, seeds:, prompt:)` suggests about 10 search terms from the
   blog goal and topics (needs `ai`, 402 on an empty balance), and `blog.submit_article` moves a
   draft, failed or rejected article to `in_review` (needs `posts`, 409 otherwise).
@@ -123,6 +146,11 @@ All notable changes to this gem are documented here. The format follows
 - `validate.subreddit` (`posts` scope), with the `SubredditCheck` model.
 - `inbox.vote` (`inbox` and `publish`): up, down, or `'none'` to take an earlier vote back.
 - `SocialAccount#reconnect_required`, and the inbox item's `vote` and `can_vote`.
+- `client.blogs` reaches content a connected site already owns, by the platform's own ids:
+  `list_blogs`, `list_articles`, `get_article`, `create_article`, `update_article`,
+  `delete_article`, plus `list_products` and `update_product` for a Shopify store, with the
+  `RemoteBlog`, `RemoteArticle` and `RemoteProduct` models. `update_article` changes the live
+  article in place and never creates a second post. Reads need `posts`; the writes need `publish`.
 
 ### Changed
 
@@ -142,34 +170,6 @@ All notable changes to this gem are documented here. The format follows
 
 - **Breaking:** `BlogSettings#auto_publish` and the `auto_publish:` keyword on
   `blog.update_settings`. Every article now goes through `submit_article` before it publishes.
-
-## [0.3.0] - 2026-09-19
-
-### Added
-
-- `inbox.like`, `unlike`, `pin`, `unpin`, `react`, `edit_comment`, `start_conversation` and
-  `set_typing` (`inbox` scope, plus `publish`).
-- `inbox.reply` takes `media_ids` and `quick_replies`; `text` is optional when `media_ids` is given.
-- `InboxItem` reads `liked`, `pinned`, `reaction`, `edited_at` and the `can_like`, `can_pin`,
-  `can_edit`, `can_react`, `can_send_media`, `can_quick_reply` and `can_private_reply` flags;
-  `InboxAccount` reads `can_start_conversation`.
-- `validate` resource: `post`, `length` and `media` preflight checks (`posts` scope).
-- `account_groups` resource: `list`, `create`, `get`, `update`, `delete` and `set_members`
-  (`accounts` scope).
-- `accounts.update` renames an account and `accounts.move` moves it to another workspace;
-  `accounts.list` takes `group_id`, and `SocialAccount#platform_name` is read.
-- `posts.create` takes `account_group_id`.
-- `media.presign`, `complete` and `upload_direct` upload a file straight to storage instead of
-  through the API (`posts` scope).
-- `ads` campaign tree: `account_tree`, and create, get, update, delete and duplicate for
-  campaigns, ad sets and network ads, plus `bulk_set_status` (`ads` scope; writes also need
-  `publish`).
-- `ads` creatives (`creatives`, `create_creative`, `get_creative`, `delete_creative`), audiences
-  (`get_audience`, `update_audience`, `delete_audience`, `add_audience_users`), `estimate_reach`,
-  `insights` and `ad_insights`.
-- `ads` lead forms and leads: `get_lead_form`, `archive_lead_form`, `leads_feed` (cursor
-  paginated), `lead_pages`, `subscribe_lead_page` and `unsubscribe_lead_page`.
-- `ads.create` takes `url_tags`.
 
 ## [0.2.0] - 2026-09-19
 

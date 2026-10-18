@@ -443,6 +443,37 @@ module Fopost
         parse_list(LinkedInMention, unwrap(http.get("/accounts/#{account_id}/linkedin/mentions", { 'q' => q })))
       end
 
+      # ── X communities ──
+
+      # The communities FoPost knows the account is in.
+      def list_communities(account_id)
+        parse_list(Community, unwrap(http.get("/accounts/#{account_id}/communities")))
+      end
+
+      # Pull the account's memberships from X. `note` says when X answered
+      # less than the full list.
+      def sync_communities(account_id)
+        body = as_hash(http.post("/accounts/#{account_id}/communities/sync"))
+        CommunitySync.new('communities' => body['data'], 'note' => body['note'])
+      end
+
+      # Communities on X matching `q`, attached with {#add_community}.
+      def search_communities(account_id, q:)
+        parse_list(CommunitySearchResult, unwrap(http.get("/accounts/#{account_id}/communities/search", { 'q' => q })))
+      end
+
+      # Attach a community by its X id, for one search cannot find.
+      def add_community(account_id, community_id:, name: nil)
+        body = compact_nil('communityId' => community_id, 'name' => name)
+        Community.new(unwrap(http.post("/accounts/#{account_id}/communities/manual", body)))
+      end
+
+      # `community_row_id` is the `id` of a `Community`, not X's `community_id`.
+      def remove_community(account_id, community_row_id)
+        http.delete("/accounts/#{account_id}/communities/#{community_row_id}")
+        nil
+      end
+
       private
 
       # Symbol keys read the same as string keys on the way out to the API.

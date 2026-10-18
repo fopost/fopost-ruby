@@ -474,6 +474,33 @@ module Fopost
         nil
       end
 
+      # ── X (every call is an X API call metered to the workspace) ──────
+
+      # Follow an X user from this account; `user_id` is the numeric X user id. Needs `inbox` and `publish`.
+      def follow_x_user(account_id, user_id:)
+        XFollowResult.new(unwrap(http.post("/accounts/#{account_id}/x/follow", { 'user_id' => user_id })))
+      end
+
+      def unfollow_x_user(account_id, user_id:)
+        XFollowResult.new(unwrap(http.post("/accounts/#{account_id}/x/unfollow", { 'user_id' => user_id })))
+      end
+
+      # One X post by its X id, read with the named account's token. Needs `inbox`.
+      def x_post(post_id, account_id:)
+        XPost.new(unwrap(http.get("/x/posts/#{post_id}", { 'account_id' => account_id })))
+      end
+
+      # Recent X posts matching `q` (1..512 characters); `max_results` is 10..100.
+      # Pass `next_token` back as `next_token:` for the next page. Needs `inbox`.
+      def search_x_posts(q, account_id:, max_results: nil, next_token: nil)
+        params = compact_nil(
+          'q' => q, 'account_id' => account_id, 'max_results' => max_results, 'next_token' => next_token
+        )
+        body = as_hash(http.get('/x/search', params))
+        meta = body['meta'].is_a?(Hash) ? body['meta'] : {}
+        XSearchPage.new('posts' => body['data'], 'next_token' => meta['next_token'])
+      end
+
       private
 
       # Symbol keys read the same as string keys on the way out to the API.

@@ -327,6 +327,39 @@ module Fopost
     attribute :annotation
   end
 
+  # One X post read live with the account's own token; `id` is X's post id.
+  class XPost < Model
+    attribute :id
+    attribute :text
+    attribute :permalink
+    attribute :author_name
+    attribute :author_handle
+    attribute :author_avatar_url
+    attribute :author_followers
+    # Thread root id.
+    attribute :conversation_id
+    # The post this one replied to.
+    attribute :parent_external_id
+    attribute :likes
+    attribute :replies
+    attribute :reposts
+    attribute :quotes
+    attribute :platform_created_at, :time
+  end
+
+  # One page of X search results; pass `next_token` back as `next_token:` for the next.
+  class XSearchPage < Model
+    attribute :posts, [XPost]
+    attribute :next_token
+  end
+
+  # Whether the account follows the X user after a follow or unfollow.
+  class XFollowResult < Model
+    attribute :account_id
+    attribute :user_id
+    attribute :following
+  end
+
   # A channel the Slack app can post to; `is_current` marks the one this account posts to.
   # A blog on a connected site. `id` is the platform's own id, never a FoPost
   # one. Shopify reports every blog on the store; WordPress has one implicit
@@ -1018,6 +1051,8 @@ module Fopost
     attribute :can_reply
     attribute :hidden
     attribute :liked
+    attribute :reposted
+    attribute :bookmarked
     # How the account voted where the network ranks by votes: 'up', 'down' or nil.
     attribute :vote
     attribute :pinned
@@ -1026,6 +1061,8 @@ module Fopost
     attribute :can_hide
     attribute :can_delete
     attribute :can_like
+    attribute :can_repost
+    attribute :can_bookmark
     attribute :can_vote
     attribute :can_pin
     attribute :can_edit

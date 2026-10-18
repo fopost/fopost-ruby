@@ -210,6 +210,33 @@ class InboxTest < Minitest::Test
     assert_nil transport.last.body
   end
 
+  def test_repost_unrepost_bookmark_and_unbookmark
+    x_item = INBOX_ITEM_FIXTURE.merge('platform' => 'twitter', 'canRepost' => true, 'canBookmark' => true)
+    transport
+      .stub(:post, '/inbox/inb_1/repost', json: { 'data' => x_item.merge('reposted' => true) })
+      .stub(:post, '/inbox/inb_1/unrepost', json: { 'data' => x_item.merge('reposted' => false) })
+      .stub(:post, '/inbox/inb_1/bookmark', json: { 'data' => x_item.merge('bookmarked' => true) })
+      .stub(:post, '/inbox/inb_1/unbookmark', json: { 'data' => x_item.merge('bookmarked' => false) })
+
+    reposted = client.inbox.repost('inb_1')
+
+    assert_equal 'POST', transport.last.method
+    assert_equal '/v1/inbox/inb_1/repost', transport.last.path
+    assert_nil transport.last.body
+    assert reposted.reposted
+    assert reposted.can_repost
+    refute client.inbox.unrepost('inb_1').reposted
+
+    bookmarked = client.inbox.bookmark('inb_1')
+
+    assert_equal '/v1/inbox/inb_1/bookmark', transport.last.path
+    assert bookmarked.bookmarked
+    assert bookmarked.can_bookmark
+    refute client.inbox.unbookmark('inb_1').bookmarked
+    assert_equal '/v1/inbox/inb_1/unbookmark', transport.last.path
+    assert_nil transport.last.body
+  end
+
   def test_react_sends_the_reaction_and_null_to_remove
     transport.stub(:post, '/inbox/inb_1/react', json: { 'data' => INBOX_ITEM_FIXTURE.merge('reaction' => '❤️') })
 

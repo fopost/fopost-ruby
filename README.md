@@ -282,6 +282,18 @@ client.accounts.list_reddit_flairs(account_id, 'webdev')
 client.accounts.set_reddit_default_subreddit(account_id, 'webdev')   # nil falls back to the profile page
 ```
 
+On X, follow a user from the account, look a post up by its id and search recent posts. Every call is an X
+API call metered to the workspace; an account connected before repost, bookmark and follow arrived answers
+`409 reconnect_required` until it is reconnected. The reads need `inbox`, follow and unfollow also `publish`:
+
+```ruby
+client.accounts.follow_x_user(account_id, user_id: '12345')      # unfollow_x_user works the same way
+post = client.accounts.x_post('1790000000000000001', account_id: account_id)
+page = client.accounts.search_x_posts('launch day', account_id: account_id, max_results: 50)
+page.posts.each { |p| puts "#{p.author_handle}: #{p.text}" }
+client.accounts.search_x_posts('launch day', account_id: account_id, next_token: page.next_token)
+```
+
 ## Pagination
 
 `posts.list` returns one page, which is `Enumerable` over its items. `posts.each` walks every page for you.
@@ -436,6 +448,7 @@ Acting on the platform also needs the `publish` scope. Each item's `can_*` flags
 
 ```ruby
 client.inbox.like(item.id)                               # unlike, pin, unpin work the same way
+client.inbox.repost(item.id)                             # X; unrepost, bookmark, unbookmark work the same way
 client.inbox.vote(item.id, 'down')                       # 'up', 'down', or 'none' to take it back
 client.inbox.react(item.id, reaction: '❤️')               # reaction: nil removes ours
 client.inbox.edit_comment(item.id, text: 'Fixed a typo')

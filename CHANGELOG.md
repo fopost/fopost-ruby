@@ -18,6 +18,14 @@ All notable changes to this gem are documented here. The format follows
   `AdPixelDetail`, `AdPixelStats`, `EventMatchQuality`, `CustomConversion` and
   `CustomConversionRule`.
 - `HTTP::Client#request` takes `headers:` for per-request headers.
+- `inbox.repost`, `unrepost`, `bookmark` and `unbookmark` on X items (`inbox` scope, plus
+  `publish`); `InboxItem` reads `reposted`, `bookmarked`, `can_repost` and `can_bookmark`.
+- `accounts.follow_x_user` and `unfollow_x_user` (`inbox` scope, plus `publish`), answering
+  an `XFollowResult`.
+- `accounts.x_post` and `search_x_posts` read X posts live with the account's token (`inbox`
+  scope); search answers an `XSearchPage` with `posts` and `next_token`.
+- X's own pay-per-use balance being spent answers `402 platform_balance_spent`, raised as
+  `PaymentRequiredError`.
 
 ### Changed
 
@@ -61,6 +69,9 @@ All notable changes to this gem are documented here. The format follows
 - `media.list`, `media.upload` (multipart through the API) and `media.delete`; `MediaItem`
   reads the library fields (`mime_type`, `tags`, `folder_id`, `brand_role`, `share`, ...).
 - `OffsetPageMeta` for the lists that answer `page`, `per_page`, `total`, `total_pages`.
+- X accounts connected before this release must be reconnected for repost, bookmark and
+  follow: the grant now asks for bookmark and follow permissions, and an older token answers
+  `409 reconnect_required`.
 
 ## [0.3.0] - 2026-10-18
 

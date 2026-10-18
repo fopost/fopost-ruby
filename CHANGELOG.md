@@ -4,6 +4,29 @@ All notable changes to this gem are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the gem follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Ads tracking on `client.ads` (scope `ads`): `send_conversions` sends through the
+  Conversions API with a required `idempotency_key:` (the `Idempotency-Key` header), and
+  `conversion_batches` lists what was sent with identifiers as hashes. Pixels: `pixels`,
+  `create_pixel`, `get_pixel`, `update_pixel`, `share_pixel`, `pixel_stats` and
+  `pixel_match_quality`. Custom conversions: `custom_conversions`, `create_custom_conversion`,
+  `get_custom_conversion`, `update_custom_conversion` and `delete_custom_conversion`. New
+  models `ConversionUploadResult`, `ConversionBatch`, `HashedConversionEvent`, `AdPixel`,
+  `AdPixelDetail`, `AdPixelStats`, `EventMatchQuality`, `CustomConversion` and
+  `CustomConversionRule`.
+- `HTTP::Client#request` takes `headers:` for per-request headers.
+
+### Changed
+
+- `ads.upload_conversions` takes an optional `idempotency_key:`, accepts snake_case event
+  keys (`event_id`, `action_source`, `source_url`, `external_id`, `client_ip_address`,
+  `client_user_agent`, `click_id`, `browser_id`, `content_ids`) and answers a
+  `ConversionUploadResult` (`id`, `accepted`, `event_count`, `replayed`); `result['accepted']`
+  still reads.
+
 ## [0.3.0] - 2026-10-18
 
 ### Added

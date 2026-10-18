@@ -1619,6 +1619,101 @@ module Fopost
     attribute :cost_per_conversion_minor
   end
 
+  # What `POST /ads/conversions` answered. `replayed` is true when the
+  # Idempotency-Key had been used before and nothing was sent again.
+  class ConversionUploadResult < Model
+    attribute :id
+    attribute :accepted
+    attribute :event_count
+    attribute :replayed
+  end
+
+  # A stored conversion event: identifiers are kept as hashes only.
+  class HashedConversionEvent < Model
+    attribute :event_name
+    attribute :occurred_at, :time
+    attribute :event_id
+    attribute :action_source
+    attribute :email_hash
+    attribute :phone_hash
+    attribute :external_id_hash
+    attribute :value_minor
+    attribute :currency
+    attribute :order_id
+  end
+
+  class ConversionBatch < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :connection_id
+    attribute :ad_account_id
+    attribute :pixel_id
+    attribute :idempotency_key
+    attribute :event_count
+    attribute :accepted
+    attribute :events, [HashedConversionEvent]
+    attribute :created_at, :time
+  end
+
+  class AdPixel < Model
+    attribute :id
+    attribute :name
+  end
+
+  # `code` is the script to place on the site.
+  class AdPixelDetail < Model
+    attribute :id
+    attribute :name
+    attribute :code
+    attribute :created_at, :time
+    attribute :last_fired_at, :time
+    attribute :is_unavailable
+    attribute :data_use_setting
+  end
+
+  class AdPixelEventCount < Model
+    attribute :event_name
+    attribute :count
+  end
+
+  class AdPixelStats < Model
+    attribute :since
+    attribute :until
+    attribute :events, [AdPixelEventCount]
+  end
+
+  class EventMatchKey < Model
+    attribute :identifier
+    attribute :coverage_percent
+  end
+
+  # The network's match score for one event, out of 10.
+  class EventMatchQuality < Model
+    attribute :event_name
+    attribute :score
+    attribute :match_keys, [EventMatchKey]
+  end
+
+  class CustomConversionRule < Model
+    attribute :event_name
+    attribute :url_contains
+    attribute :url_equals
+  end
+
+  class CustomConversion < Model
+    attribute :id
+    attribute :name
+    attribute :pixel_id
+    attribute :event_type
+    attribute :rule, CustomConversionRule
+    attribute :description
+    attribute :default_value_minor
+    attribute :is_archived
+    attribute :is_unavailable
+    attribute :created_at, :time
+    attribute :last_fired_at, :time
+  end
+
   # `spend_minor` is in the ad account currency, minor units; `ctr` is a percentage.
   class InsightsMetrics < Model
     attribute :impressions

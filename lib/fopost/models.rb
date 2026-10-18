@@ -2002,9 +2002,8 @@ module Fopost
 
   # The outcome of a test delivery to `website_url`.
   class BlogWebsiteTest < Model
-    attribute :ok
-    attribute :status
-    attribute :error
+    # What the website answered.
+    attribute :http_status
   end
 
   class BlogKeyword < Model

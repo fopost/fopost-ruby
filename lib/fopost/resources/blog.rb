@@ -14,7 +14,7 @@ module Fopost
       # ── Settings ──────────────────────────────────────────────────
 
       def get_settings(workspace_id)
-        BlogSettings.new(unwrap(http.get('/blog/settings', { 'workspaceId' => workspace_id })))
+        BlogSettings.new(unwrap(http.get('/blog/settings', { 'workspace_id' => workspace_id })))
       end
 
       # Partial update: only what you pass is sent.
@@ -47,19 +47,20 @@ module Fopost
           'targetAccountId' => target_account_id,
           'websiteUrl' => website_url
         )
-        response = as_hash(http.patch('/blog/settings', { 'workspaceId' => workspace_id }.merge(body)))
-        BlogSettingsUpdate.new('settings' => response['data'], 'websiteSecret' => response['websiteSecret'])
+        response = as_hash(unwrap(http.patch('/blog/settings', { 'workspaceId' => workspace_id }.merge(body))))
+        BlogSettingsUpdate.new('settings' => response, 'website_secret' => response['website_secret'])
       end
 
       # Issue a new website secret; the old one stops verifying at once.
       # Returns the secret, shown this once.
       def rotate_website_secret(workspace_id)
         result = as_hash(unwrap(http.post('/blog/settings/website-secret', { 'workspaceId' => workspace_id })))
-        result['websiteSecret'].to_s
+        result['website_secret'].to_s
       end
 
       # Send a signed `article.test` delivery to `website_url`. A site that
-      # does not answer 2xx comes back as a 502 `Fopost::Error`.
+      # does not answer 2xx comes back as a 502 `Fopost::Error` whose body
+      # carries the site's `http_status`.
       def test_website(workspace_id)
         BlogWebsiteTest.new(unwrap(http.post('/blog/settings/website-test', { 'workspaceId' => workspace_id })))
       end
@@ -68,7 +69,7 @@ module Fopost
 
       # `status` takes one status or an array of them.
       def list_keywords(workspace_id, status: nil, limit: nil)
-        params = { 'workspaceId' => workspace_id, 'status' => csv(status), 'limit' => limit }
+        params = { 'workspace_id' => workspace_id, 'status' => csv(status), 'limit' => limit }
         parse_list(BlogKeyword, unwrap(http.get('/blog/keywords', params)))
       end
 
@@ -111,7 +112,7 @@ module Fopost
 
       # `status` takes one status or an array of them.
       def list_articles(workspace_id, status: nil, limit: nil)
-        params = { 'workspaceId' => workspace_id, 'status' => csv(status), 'limit' => limit }
+        params = { 'workspace_id' => workspace_id, 'status' => csv(status), 'limit' => limit }
         parse_list(BlogArticle, unwrap(http.get('/blog/articles', params)))
       end
 
@@ -186,7 +187,7 @@ module Fopost
       private
 
       def workspace(workspace_id)
-        { 'workspaceId' => workspace_id }
+        { 'workspace_id' => workspace_id }
       end
 
       def patch(path, workspace_id, body)

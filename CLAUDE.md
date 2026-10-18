@@ -11,7 +11,7 @@ error class per status.
 - **Ruby >= 3.1** (`required_ruby_version` in `fopost.gemspec`).
 - **Zero runtime dependencies on purpose** — the gem talks over `net/http` from the standard
   library so it drops into any app without a version conflict. Do not add one.
-- Version `0.3.0` in `lib/fopost/version.rb`, which the gemspec reads.
+- Version `0.4.0` in `lib/fopost/version.rb`, which the gemspec reads.
 
 ## Downstream Packages
 
@@ -76,7 +76,7 @@ calls `unwrap` and hands the hash to a model.
   named fields (`Resources::Base#compact_unset`).
 - `Resources::Posts#each` / `#each_page` walk the list endpoint a page at a time.
 
-**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `contacts`, `broadcasts`, `sequences`, `ads`, `validate`, `media`, `blog`.
+**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `contacts`, `broadcasts`, `sequences`, `ads`, `validate`, `media`, `blog`, `queue`, `connect_sessions`, `webhooks`, `automations`, `logs`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
 `#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move` plus the Telegram connect-code and bot-commands methods and the Slack channels, members and identity methods. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, reply, hide, delete, like, pin, react, edit,
@@ -84,14 +84,14 @@ start-conversation, typing and approval endpoints (like, pin, react, edit, start
 and typing also need `publish`) but not
 `/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
 the campaign tree (campaigns, ad sets, network ads), creatives, audiences, reach, insights,
-targeting search, lead forms and the leads feed; `boost`, `create`, `set_status`, `delete`,
+targeting search, lead forms, the leads feed, pixels, the Conversions API and custom conversions; `boost`, `create`, `set_status`, `delete`,
 `bulk_set_status` and the campaign/ad set/network ad writes also need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and
 `/validate/media`. `media` (scope `posts`) is `limits` plus direct upload: `presign`, `complete` and
 `upload_direct`, which PUTs the bytes through `HTTP::Client#put_raw` with no API key.
 `posts.create`/`update` take `files:` and pick multipart (`HTTP::Client#post_multipart`, body
-built by `HTTP::Multipart`) or direct upload by size against `media.limits`. There is
-no `communities`, `webhooks`, `analytics`, or `automations` resource; reach those through
-`Fopost::Client#request` until one is added.
+built by `HTTP::Multipart`) or direct upload by size against `media.limits`. `client.webhooks` is
+`Resources::WebhookEndpoints` (the REST resource, scope `webhooks`); the name differs because
+`Fopost::Webhooks` is the signature verifier. Anything else goes through `Fopost::Client#request`.
 
 ## API Contract
 

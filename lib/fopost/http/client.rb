@@ -46,10 +46,11 @@ module Fopost
       end
 
       # Send a request, retrying on 429, and return the decoded body.
-      # `multipart` is `{ fields: {name => string}, parts: [Multipart::Part] }`.
-      def request(method, path, json: nil, params: nil, multipart: nil)
+      # `multipart` is `{ fields: {name => string}, parts: [Multipart::Part] }`;
+      # `headers` adds per-request headers such as `Idempotency-Key`.
+      def request(method, path, json: nil, params: nil, multipart: nil, headers: nil)
         url = build_url(path, params)
-        request_headers = headers
+        request_headers = self.headers.merge((headers || {}).compact)
         body = nil
         if multipart
           body, request_headers['Content-Type'] = Multipart.encode(multipart[:fields] || {}, multipart[:parts] || [])

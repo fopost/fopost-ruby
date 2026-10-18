@@ -3,15 +3,39 @@
 require 'fopost/model'
 
 module Fopost
+  # How a library item is shared by link.
+  class MediaShare < Model
+    attribute :url
+    attribute :created_at, :time
+    attribute :created_by_name
+    attribute :source
+  end
+
   class MediaItem < Model
     attribute :id
+    attribute :workspace_id
     attribute :type
     attribute :name
     attribute :url
+    attribute :visibility
+    attribute :mime_type
     attribute :size
     attribute :alt
+    attribute :alt_text
+    attribute :alt_text_source
+    attribute :tags
+    attribute :folder_id
+    attribute :origin
+    attribute :source_url
+    attribute :synced_at, :time
+    attribute :brand_role
+    attribute :brand_voice_id
+    attribute :generation_run_id
+    attribute :has_person_consent
     attribute :thumbnail
     attribute :preview_url
+    attribute :share, MediaShare
+    attribute :created_at, :time
   end
 
   # Where and how to PUT the bytes of a direct upload.
@@ -602,6 +626,8 @@ module Fopost
     attribute :name
     attribute :color
     attribute :workspace, :hash
+    attribute :created_at, :time
+    attribute :updated_at, :time
   end
 
   class Post < Model
@@ -643,8 +669,10 @@ module Fopost
     attribute :require_approval
     attribute :ai_alt_text_enabled
     attribute :brand_color
+    attribute :connect_redirect_domains
     attribute :role
     attribute :created_at, :time
+    attribute :updated_at, :time
     attribute :accounts, [SocialAccount]
   end
 
@@ -954,6 +982,15 @@ module Fopost
     attribute :page
     attribute :per_page
     attribute :total
+  end
+
+  # `page`, `per_page`, `total`, `total_pages` on the media, automation and
+  # posts-table lists.
+  class OffsetPageMeta < Model
+    attribute :page
+    attribute :per_page
+    attribute :total
+    attribute :total_pages
   end
 
   class InboxAccountRef < Model
@@ -1656,6 +1693,101 @@ module Fopost
     attribute :cost_per_conversion_minor
   end
 
+  # What `POST /ads/conversions` answered. `replayed` is true when the
+  # Idempotency-Key had been used before and nothing was sent again.
+  class ConversionUploadResult < Model
+    attribute :id
+    attribute :accepted
+    attribute :event_count
+    attribute :replayed
+  end
+
+  # A stored conversion event: identifiers are kept as hashes only.
+  class HashedConversionEvent < Model
+    attribute :event_name
+    attribute :occurred_at, :time
+    attribute :event_id
+    attribute :action_source
+    attribute :email_hash
+    attribute :phone_hash
+    attribute :external_id_hash
+    attribute :value_minor
+    attribute :currency
+    attribute :order_id
+  end
+
+  class ConversionBatch < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :connection_id
+    attribute :ad_account_id
+    attribute :pixel_id
+    attribute :idempotency_key
+    attribute :event_count
+    attribute :accepted
+    attribute :events, [HashedConversionEvent]
+    attribute :created_at, :time
+  end
+
+  class AdPixel < Model
+    attribute :id
+    attribute :name
+  end
+
+  # `code` is the script to place on the site.
+  class AdPixelDetail < Model
+    attribute :id
+    attribute :name
+    attribute :code
+    attribute :created_at, :time
+    attribute :last_fired_at, :time
+    attribute :is_unavailable
+    attribute :data_use_setting
+  end
+
+  class AdPixelEventCount < Model
+    attribute :event_name
+    attribute :count
+  end
+
+  class AdPixelStats < Model
+    attribute :since
+    attribute :until
+    attribute :events, [AdPixelEventCount]
+  end
+
+  class EventMatchKey < Model
+    attribute :identifier
+    attribute :coverage_percent
+  end
+
+  # The network's match score for one event, out of 10.
+  class EventMatchQuality < Model
+    attribute :event_name
+    attribute :score
+    attribute :match_keys, [EventMatchKey]
+  end
+
+  class CustomConversionRule < Model
+    attribute :event_name
+    attribute :url_contains
+    attribute :url_equals
+  end
+
+  class CustomConversion < Model
+    attribute :id
+    attribute :name
+    attribute :pixel_id
+    attribute :event_type
+    attribute :rule, CustomConversionRule
+    attribute :description
+    attribute :default_value_minor
+    attribute :is_archived
+    attribute :is_unavailable
+    attribute :created_at, :time
+    attribute :last_fired_at, :time
+  end
+
   # `spend_minor` is in the ad account currency, minor units; `ctr` is a percentage.
   class InsightsMetrics < Model
     attribute :impressions
@@ -2345,5 +2477,638 @@ module Fopost
     attribute :invited_at, :time
     attribute :activated_at, :time
     attribute :expires_at, :time
+  end
+
+  # ── Posting queue ────────────────────────────────────────────────
+
+  # A weekly posting slot. `weekday` is 0 (Sunday) to 6, `time` is "HH:MM" in
+  # `timezone`; `account_id` nil means the slot is for every account.
+  class QueueSlot < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :account_id
+    attribute :weekday
+    attribute :time
+    attribute :timezone
+    attribute :created_at, :time
+  end
+
+  # A queued post that moved to a new time when a slot changed.
+  class QueueSlotMove < Model
+    attribute :id
+    attribute :from, :time
+    attribute :to, :time
+  end
+
+  # The changed slot plus the posts it moved.
+  class QueueSlotUpdated < QueueSlot
+    attribute :moved, [QueueSlotMove]
+  end
+
+  class QueueSlotDeleted < Model
+    attribute :deleted
+    attribute :moved, [QueueSlotMove]
+  end
+
+  # ── Posts: unpublish and bulk import ─────────────────────────────
+
+  class UnpublishDelivery < Model
+    attribute :account_id
+    attribute :platform
+    attribute :removed
+  end
+
+  class UnpublishResult < Model
+    attribute :post_status
+    attribute :deliveries, [UnpublishDelivery]
+  end
+
+  class BulkImportRow < Model
+    attribute :row
+    attribute :content_preview
+    attribute :content_type
+    attribute :thread_parts
+    attribute :schedule_at, :time
+    attribute :repeat
+    attribute :accounts
+    attribute :labels
+    attribute :has_media
+    attribute :media_count
+    attribute :captions
+    attribute :errors
+  end
+
+  class BulkImportValidation < Model
+    attribute :total_rows
+    attribute :valid_rows
+    attribute :invalid_rows
+    attribute :max_rows
+    attribute :rows, [BulkImportRow]
+  end
+
+  class BulkImportPost < Model
+    attribute :id
+    attribute :schedule_at, :time
+  end
+
+  class BulkImportResult < Model
+    attribute :batch_id
+    attribute :created
+    attribute :held_for_approval
+    attribute :posts, [BulkImportPost]
+  end
+
+  # ── Connect sessions ─────────────────────────────────────────────
+
+  class ConnectSessionBranding < Model
+    attribute :name
+    attribute :logo_url
+  end
+
+  # A hosted connect link: send `url` to the person who owns the account.
+  class ConnectSession < Model
+    attribute :id
+    attribute :status
+    attribute :external_user_id
+    attribute :platforms
+    attribute :redirect_url
+    attribute :branding, ConnectSessionBranding
+    attribute :account_id
+    attribute :url
+    attribute :expires_at, :time
+    attribute :used_at, :time
+    attribute :created_at, :time
+  end
+
+  # ── X communities ────────────────────────────────────────────────
+
+  # A community the account may post into. `id` is FoPost's row id, used to
+  # remove it; `community_id` is X's.
+  class Community < Model
+    attribute :id
+    attribute :account_id
+    attribute :community_id
+    attribute :name
+    attribute :member_count
+    attribute :description
+    attribute :image_url
+    attribute :last_synced_at, :time
+    attribute :created_at, :time
+  end
+
+  # A community found on X, not yet attached to the account.
+  class CommunitySearchResult < Model
+    attribute :id
+    attribute :name
+    attribute :description
+    attribute :member_count
+  end
+
+  class CommunitySync < Model
+    attribute :communities, [Community]
+    attribute :note
+  end
+
+  # ── Request logs ─────────────────────────────────────────────────
+
+  class RequestLog < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :time, :time
+    attribute :auth_method
+    attribute :method
+    attribute :route
+    attribute :path
+    attribute :status_code
+    attribute :duration_ms
+    attribute :platform
+    attribute :message
+  end
+
+  class RequestLogBucket < Model
+    attribute :at, :time
+    attribute :total
+    attribute :errors
+  end
+
+  class RequestLogSummary < Model
+    attribute :since, :time
+    attribute :total
+    attribute :errors
+    attribute :buckets, [RequestLogBucket]
+  end
+
+  # One page of request logs; pass `next_cursor` as `before` for the next.
+  class RequestLogPage < Model
+    attribute :logs, [RequestLog]
+    attribute :next_cursor
+    attribute :has_more
+    attribute :summary, RequestLogSummary
+  end
+
+  # ── Webhooks ─────────────────────────────────────────────────────
+
+  # An outbound webhook. `secret` is only answered on create and update.
+  class Webhook < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :name
+    attribute :url
+    attribute :secret
+    attribute :events
+    attribute :header_names
+    attribute :active
+    attribute :last_triggered_at, :time
+    attribute :failure_count
+    attribute :created_at, :time
+  end
+
+  # One attempt to deliver an event. `payload` is only on the single read.
+  class WebhookDelivery < Model
+    attribute :id
+    attribute :webhook_id
+    attribute :event
+    attribute :delivery_key
+    attribute :attempt
+    attribute :status
+    attribute :response_status
+    attribute :response_snippet
+    attribute :duration_ms
+    attribute :payload_hash
+    attribute :next_retry_at, :time
+    attribute :created_at, :time
+    attribute :payload, :hash
+  end
+
+  # ── Analytics: overview and reports ──────────────────────────────
+
+  class AnalyticsDeltas < Model
+    attribute :followers
+    attribute :posts
+    attribute :engagement
+    attribute :impressions
+    attribute :likes
+    attribute :comments
+    attribute :shares
+    attribute :profile_views
+  end
+
+  class AnalyticsTodayStats < Model
+    attribute :posts
+    attribute :follower_change
+    attribute :engagement
+  end
+
+  class AnalyticsPlatformTotals < Model
+    attribute :platform
+    attribute :accounts
+    attribute :followers
+  end
+
+  class FollowerHistoryPoint < Model
+    attribute :date
+    attribute :followers
+  end
+
+  class AnalyticsAccount < Model
+    attribute :account_id
+    attribute :platform
+    attribute :username
+    attribute :name
+    attribute :avatar
+    attribute :followers
+    attribute :total_posts
+    attribute :fetched_at, :time
+    attribute :history, [FollowerHistoryPoint]
+  end
+
+  class AnalyticsOverview < Model
+    attribute :total_accounts
+    attribute :total_followers
+    attribute :total_posts
+    attribute :total_engagement
+    attribute :total_impressions
+    attribute :total_reach
+    attribute :total_likes
+    attribute :total_comments
+    attribute :total_shares
+    attribute :total_reposts
+    attribute :total_saves
+    attribute :total_clicks
+    attribute :total_video_views
+    attribute :total_profile_views
+    attribute :engagement_rate
+    attribute :deltas, AnalyticsDeltas
+    attribute :today_stats, AnalyticsTodayStats
+    attribute :platforms, [AnalyticsPlatformTotals]
+    attribute :accounts, [AnalyticsAccount]
+  end
+
+  class TimeSeriesPoint < Model
+    attribute :date
+    attribute :engagements
+    attribute :impressions
+    attribute :likes
+    attribute :comments
+    attribute :shares
+    attribute :followers
+    attribute :posts
+  end
+
+  class AnalyticsTimeSeries < Model
+    attribute :days
+    attribute :series, [TimeSeriesPoint]
+  end
+
+  class TopPostPlatform < Model
+    attribute :platform
+    attribute :username
+    attribute :url
+    attribute :removed
+  end
+
+  class TopPostMetrics < Model
+    attribute :engagements
+    attribute :impressions
+    attribute :reach
+    attribute :likes
+    attribute :comments
+    attribute :shares
+    attribute :reposts
+    attribute :clicks
+    attribute :saves
+    attribute :video_views
+  end
+
+  # `source` is 'fopost' for a post sent through FoPost, 'platform' for one
+  # made natively on the network.
+  class TopPost < Model
+    attribute :rank
+    attribute :post_id
+    attribute :external_post_id
+    attribute :source
+    attribute :preview
+    attribute :permalink
+    attribute :thumbnail_url
+    attribute :status
+    attribute :created_at, :time
+    attribute :platforms, [TopPostPlatform]
+    attribute :labels, [Label]
+    attribute :metrics, TopPostMetrics
+  end
+
+  class LabelAnalytics < Model
+    attribute :label_id
+    attribute :name
+    attribute :color
+    attribute :post_count
+    attribute :impressions
+    attribute :reach
+    attribute :engagements
+    attribute :likes
+    attribute :comments
+    attribute :shares
+    attribute :engagement_rate
+    attribute :follower_delta
+  end
+
+  class PostsTablePlatform < Model
+    attribute :platform
+    attribute :username
+    attribute :url
+    attribute :delivery_status
+  end
+
+  class DeliverySummary < Model
+    attribute :total
+    attribute :published
+    attribute :failed
+    attribute :pending
+  end
+
+  class PostsTableRow < Model
+    attribute :post_id
+    attribute :preview
+    attribute :status
+    attribute :created_at, :time
+    attribute :scheduled_at, :time
+    attribute :platforms, [PostsTablePlatform]
+    attribute :delivery_summary, DeliverySummary
+  end
+
+  class PostsTableSummary < Model
+    attribute :draft
+    attribute :scheduled
+    attribute :published
+    attribute :failed
+    attribute :pending
+    attribute :total
+  end
+
+  # One page of the posts table with the status counts across the whole range.
+  class PostsTable < Model
+    attribute :rows, [PostsTableRow]
+    attribute :meta, OffsetPageMeta
+    attribute :summary, PostsTableSummary
+  end
+
+  class PostingStreakDay < Model
+    attribute :date
+    attribute :count
+    attribute :published_count
+    attribute :failed_count
+    attribute :scheduled_count
+  end
+
+  class PostingStreak < Model
+    attribute :streak, [PostingStreakDay]
+  end
+
+  class DemographicBucket < Model
+    attribute :key
+    attribute :value
+    attribute :share
+  end
+
+  class DemographicDimensions < Model
+    attribute :age, [DemographicBucket]
+    attribute :gender, [DemographicBucket]
+    attribute :country, [DemographicBucket]
+    attribute :city, [DemographicBucket]
+  end
+
+  class DemographicsAccountRef < Model
+    attribute :account_id
+    attribute :platform
+    attribute :username
+  end
+
+  class AudienceDemographics < Model
+    attribute :audience
+    attribute :dimensions, DemographicDimensions
+    attribute :contributing_accounts, [DemographicsAccountRef]
+    attribute :unsupported_accounts, [DemographicsAccountRef]
+  end
+
+  class InboxAnalyticsTotals < Model
+    attribute :received
+    attribute :sent
+    attribute :answered
+    attribute :open
+    attribute :conversations
+    attribute :median_response_minutes
+  end
+
+  class InboxAnalyticsDeltas < Model
+    attribute :received
+    attribute :sent
+    attribute :answered
+  end
+
+  class InboxAnalyticsPoint < Model
+    attribute :date
+    attribute :received
+    attribute :sent
+    attribute :answered
+  end
+
+  class InboxAnalyticsPlatform < Model
+    attribute :platform
+    attribute :received
+    attribute :sent
+  end
+
+  class InboxAnalyticsType < Model
+    attribute :type
+    attribute :count
+  end
+
+  class InboxAnalyticsAccount < Model
+    attribute :account_id
+    attribute :platform
+    attribute :username
+    attribute :name
+    attribute :avatar
+    attribute :received
+    attribute :sent
+  end
+
+  class InboxResponseTimeBucket < Model
+    attribute :bucket
+    attribute :count
+  end
+
+  class InboxHeatmapCell < Model
+    attribute :weekday
+    attribute :hour
+    attribute :count
+  end
+
+  class InboxAnalytics < Model
+    attribute :totals, InboxAnalyticsTotals
+    attribute :deltas, InboxAnalyticsDeltas
+    attribute :series, [InboxAnalyticsPoint]
+    attribute :by_platform, [InboxAnalyticsPlatform]
+    attribute :by_type, [InboxAnalyticsType]
+    attribute :by_account, [InboxAnalyticsAccount]
+    attribute :response_time, [InboxResponseTimeBucket]
+    attribute :heatmap, [InboxHeatmapCell]
+    attribute :time_zone
+  end
+
+  # One account the collector could not read; `action` says what unblocks it.
+  class AnalyticsCollectError < Model
+    attribute :account_id
+    attribute :platform
+    attribute :username
+    attribute :stage
+    attribute :message
+    attribute :action
+  end
+
+  class AnalyticsCollectResult < Model
+    attribute :accounts
+    attribute :posts
+    attribute :demographics
+    attribute :errors
+    attribute :error_details, [AnalyticsCollectError]
+  end
+
+  # ── Automations ──────────────────────────────────────────────────
+
+  class AutomationScheduleWindow < Model
+    attribute :days
+    attribute :start
+    attribute :end
+  end
+
+  class AutomationNodeLayout < Model
+    attribute :x
+    attribute :y
+  end
+
+  class AutomationNode < Model
+    attribute :id
+    attribute :kind
+    attribute :label
+    attribute :config, :hash
+    attribute :position
+    attribute :layout, AutomationNodeLayout
+  end
+
+  class AutomationEdge < Model
+    attribute :id
+    attribute :source
+    attribute :source_handle
+    attribute :target
+  end
+
+  class AutomationGraph < Model
+    attribute :nodes, [AutomationNode]
+    attribute :edges, [AutomationEdge]
+  end
+
+  class AutomationStep < Model
+    attribute :position
+    attribute :node_id
+    attribute :action_type
+    attribute :action_config, :hash
+  end
+
+  # `secret` is only answered on create, for an `api_webhook` trigger.
+  class Automation < Model
+    attribute :id
+    attribute :workspace_id
+    attribute :name
+    attribute :description
+    attribute :trigger_type
+    attribute :trigger_config, :hash
+    attribute :active
+    attribute :schedule_window, AutomationScheduleWindow
+    attribute :max_per_day, :hash
+    attribute :credit_ceiling
+    attribute :approval_mode
+    attribute :last_triggered_at, :time
+    attribute :run_count
+    attribute :secret
+    attribute :graph, AutomationGraph
+    attribute :steps, [AutomationStep]
+    attribute :created_at, :time
+    attribute :updated_at, :time
+  end
+
+  class AutomationRunSummary < Model
+    attribute :id
+    attribute :automation_id
+    attribute :status
+    attribute :started_at, :time
+    attribute :completed_at, :time
+  end
+
+  class AutomationStats < Model
+    attribute :total_automations
+    attribute :active_automations
+    attribute :total_runs_24h
+    attribute :runs_by_status, :hash
+    attribute :recent_runs, [AutomationRunSummary]
+  end
+
+  class AutomationVersionAuthor < Model
+    attribute :name
+  end
+
+  # One saved version of an automation's graph; the list answers the diff
+  # counts, the single read the graph itself.
+  class AutomationVersion < Model
+    attribute :version
+    attribute :note
+    attribute :created_by, AutomationVersionAuthor
+    attribute :created_at, :time
+    attribute :node_count
+    attribute :nodes_added
+    attribute :nodes_removed
+    attribute :graph, AutomationGraph
+  end
+
+  # The version written by a restore: a new version carrying the old graph.
+  class AutomationRestoredVersion < Model
+    attribute :version
+    attribute :graph, AutomationGraph
+    attribute :steps, [AutomationStep]
+  end
+
+  class AutomationRunLog < Model
+    attribute :id
+    attribute :step_position
+    attribute :node_id
+    attribute :handle
+    attribute :status
+    attribute :input_snapshot, :hash
+    attribute :output_snapshot, :hash
+    attribute :started_at, :time
+    attribute :completed_at, :time
+    attribute :duration_ms
+    attribute :error_message
+  end
+
+  class AutomationRun < Model
+    attribute :id
+    attribute :automation_id
+    attribute :status
+    attribute :current_step
+    attribute :current_node_id
+    attribute :waiting_until, :time
+    attribute :trigger_event, :hash
+    attribute :context, :hash
+    attribute :initial_context, :hash
+    attribute :replay_of_run_id
+    attribute :deferred_until, :time
+    attribute :defer_reason
+    attribute :defer_detail
+    attribute :defer_count
+    attribute :started_at, :time
+    attribute :completed_at, :time
+    attribute :error_message
+    attribute :logs, [AutomationRunLog]
   end
 end

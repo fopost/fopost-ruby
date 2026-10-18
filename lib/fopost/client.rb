@@ -7,20 +7,25 @@ require 'fopost/resources/account_groups'
 require 'fopost/resources/accounts'
 require 'fopost/resources/ads'
 require 'fopost/resources/analytics'
+require 'fopost/resources/automations'
 require 'fopost/resources/blog'
 require 'fopost/resources/google_ads'
 require 'fopost/resources/ai'
 require 'fopost/resources/broadcasts'
+require 'fopost/resources/connect_sessions'
 require 'fopost/resources/contacts'
 require 'fopost/resources/google_business'
 require 'fopost/resources/inbox'
 require 'fopost/resources/activity'
 require 'fopost/resources/knowledge'
 require 'fopost/resources/labels'
+require 'fopost/resources/logs'
 require 'fopost/resources/media'
 require 'fopost/resources/posts'
+require 'fopost/resources/queue'
 require 'fopost/resources/blogs'
 require 'fopost/resources/validate'
+require 'fopost/resources/webhook_endpoints'
 require 'fopost/resources/whatsapp'
 require 'fopost/resources/workspaces'
 
@@ -38,7 +43,7 @@ module Fopost
 
     attr_reader :posts, :accounts, :account_groups, :workspaces, :labels, :ai, :inbox, :contacts, :broadcasts,
                 :sequences, :knowledge, :ads, :validate, :media, :activity, :google_business, :analytics,
-                :blog, :blogs, :whatsapp
+                :blog, :blogs, :whatsapp, :queue, :connect_sessions, :webhooks, :automations, :logs
 
     def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, timeout: HTTP::Client::DEFAULT_TIMEOUT,
                    max_retries: HTTP::Client::DEFAULT_MAX_RETRIES, transport: nil, sleeper: nil)
@@ -77,6 +82,11 @@ module Fopost
       @google_business = Resources::GoogleBusiness.new(@http)
       @blog = Resources::Blog.new(@http)
       @blogs = Resources::Blogs.new(@http)
+      @queue = Resources::Queue.new(@http)
+      @connect_sessions = Resources::ConnectSessions.new(@http)
+      @webhooks = Resources::WebhookEndpoints.new(@http)
+      @automations = Resources::Automations.new(@http)
+      @logs = Resources::Logs.new(@http)
     end
 
     def base_url

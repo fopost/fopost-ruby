@@ -67,7 +67,8 @@ module Fopost
 
       # Create a draft or a scheduled post.
       #
-      # `status` is "draft" or "scheduled"; a scheduled post needs `schedule_at`.
+      # `status` is "draft" or "scheduled"; a scheduled post needs `schedule_at`,
+      # or `schedule: 'queue'` to take the next free slot of `client.queue`.
       # To send a post out now, create it and call {#publish}. `account_group_id`
       # adds that group's accounts to `accounts`, so `accounts` may be left empty.
       #
@@ -75,7 +76,8 @@ module Fopost
       # stored in the library and attached to the first block. Files over the
       # multipart ceiling go through direct upload; the result is the same.
       def create(workspace_id:, content:, accounts: [], account_group_id: nil, status: 'draft', schedule_at: nil,
-                 labels: nil, title: nil, summary: nil, content_type: nil, settings: nil, files: nil, **extra)
+                 schedule: nil, labels: nil, title: nil, summary: nil, content_type: nil, settings: nil, files: nil,
+                 **extra)
         body = {
           'workspace_id' => workspace_id,
           'status' => status,
@@ -86,6 +88,7 @@ module Fopost
           compact_nil(
             'account_group_id' => account_group_id,
             'schedule_at' => iso8601(schedule_at),
+            'schedule' => schedule,
             'labels' => labels&.to_a,
             'title' => title,
             'summary' => summary,
@@ -108,8 +111,9 @@ module Fopost
       end
 
       # Partial update — only the fields you pass are sent. Pass an explicit nil
-      # to clear a field.
-      def update(post_id, content: UNSET, accounts: UNSET, status: UNSET, schedule_at: UNSET,
+      # to clear a field. `schedule: 'queue'` moves the post into the next free
+      # queue slot.
+      def update(post_id, content: UNSET, accounts: UNSET, status: UNSET, schedule_at: UNSET, schedule: UNSET,
                  labels: UNSET, title: UNSET, summary: UNSET, content_type: UNSET,
                  settings: UNSET, files: nil, **extra)
         body = compact_unset(
@@ -117,6 +121,7 @@ module Fopost
           'accounts' => UNSET.equal?(accounts) ? UNSET : normalize_accounts(accounts),
           'status' => status,
           'schedule_at' => UNSET.equal?(schedule_at) ? UNSET : iso8601(schedule_at),
+          'schedule' => schedule,
           'labels' => UNSET.equal?(labels) ? UNSET : labels&.to_a,
           'title' => title,
           'summary' => summary,
@@ -169,7 +174,31 @@ module Fopost
         parse_list(Delivery, unwrap(http.get("/posts/#{post_id}/deliveries")))
       end
 
+      # Take a published post down on every network it reached. Needs the
+      # `publish` scope; a network that cannot remove a post answers `removed: false`.
+      def unpublish(post_id)
+        UnpublishResult.new(unwrap(http.post("/posts/#{post_id}/unpublish")))
+      end
+
+      # Check a bulk-import CSV row by row without creating anything. `file` is
+      # a path, an IO, or a `{ filename:, io:/data: }` hash.
+      def validate_bulk_import(workspace_id:, file:)
+        BulkImportValidation.new(unwrap(bulk_import('/posts/bulk-import/validate', workspace_id, file)))
+      end
+
+      # Create every valid row of a bulk-import CSV as a post.
+      def commit_bulk_import(workspace_id:, file:)
+        BulkImportResult.new(unwrap(bulk_import('/posts/bulk-import/commit', workspace_id, file)))
+      end
+
       private
+
+      def bulk_import(path, workspace_id, file)
+        part = FilePart.from(file)
+        csv = HTTP::Multipart::Part.new(name: 'file', filename: part.filename, mime_type: part.mime_type,
+                                        data: part.data)
+        http.post_multipart(path, fields: { 'workspace_id' => workspace_id }, parts: [csv])
+      end
 
       # Accept a bare string, one block, or an array of either.
       def normalize_content(content)

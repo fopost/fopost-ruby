@@ -8,6 +8,13 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `blog.suggest_seeds(workspace_id, seeds:, prompt:)` suggests about 10 search terms from the
+  blog goal and topics (needs `ai`, 402 on an empty balance), and `blog.submit_article` moves a
+  draft, failed or rejected article to `in_review` (needs `posts`, 409 otherwise).
+- `BlogSettings#goal`, `#focus_topics`, `#avoid_topics` and `#plan_run` (`BlogPlanRun`: `status`,
+  `error`, `added`, `finished_at`); `update_settings` takes `goal:`, `focus_topics:` and
+  `avoid_topics:`. `BlogKeyword#fit_reason` says why a keyword serves the goal.
+- `in_review` on `BLOG_ARTICLE_STATUSES`.
 - `whatsapp` resource for a WhatsApp Business connection: the business profile
   (`profile`, `update_profile`, `request_display_name`, `set_username`), message
   templates including the platform's own library (`templates`, `create_template`,
@@ -107,6 +114,25 @@ All notable changes to this gem are documented here. The format follows
   (`search_instagram_audio`, `get_instagram_publishing_limit`, `list_instagram_stories`,
   `get_instagram_story_insights`) and LinkedIn mentions (`search_linkedin_mentions`), with a
   model each.
+
+### Changed
+
+- `client.blog` matches the live API contract: the workspace travels as `workspace_id` on the
+  query string, single objects are read bare and lists from `{ data }`, and every response is
+  read in snake_case. `BlogWebsiteTest` now carries `http_status` (what the website answered)
+  instead of `ok`, `status` and `error`; a failed test is still a 502 `Fopost::Error` with
+  `http_status` on its body.
+- `blog.plan_keywords` no longer fills the calendar: results land as `suggested` keywords, and
+  `update_keyword(status: 'planned')` picks one and gives it the next free date.
+- `blog.publish_article` and `update_article(publish_at:)` need an article in review (or already
+  scheduled or failed); a draft answers 409 until it is submitted.
+- `BlogSettings#review_hold_days` is now the number of days before its planned date that a
+  picked keyword starts being written.
+
+### Removed
+
+- **Breaking:** `BlogSettings#auto_publish` and the `auto_publish:` keyword on
+  `blog.update_settings`. Every article now goes through `submit_article` before it publishes.
 
 ## [0.3.0] - 2026-09-19
 

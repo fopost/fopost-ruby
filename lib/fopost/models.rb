@@ -981,6 +981,8 @@ module Fopost
     attribute :can_reply
     attribute :hidden
     attribute :liked
+    attribute :reposted
+    attribute :bookmarked
     # How the account voted where the network ranks by votes: 'up', 'down' or nil.
     attribute :vote
     attribute :pinned
@@ -989,6 +991,8 @@ module Fopost
     attribute :can_hide
     attribute :can_delete
     attribute :can_like
+    attribute :can_repost
+    attribute :can_bookmark
     attribute :can_vote
     attribute :can_pin
     attribute :can_edit

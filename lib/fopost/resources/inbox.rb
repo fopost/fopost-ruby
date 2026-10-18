@@ -149,6 +149,24 @@ module Fopost
         InboxItem.new(unwrap(http.post("/inbox/#{item_id}/unlike")))
       end
 
+      # Repost the item to the account's own timeline (X, where `can_repost` is true). Needs `publish`.
+      def repost(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/repost")))
+      end
+
+      def unrepost(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/unrepost")))
+      end
+
+      # Bookmark the item on the account (X, where `can_bookmark` is true). Needs `publish`.
+      def bookmark(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/bookmark")))
+      end
+
+      def unbookmark(item_id)
+        InboxItem.new(unwrap(http.post("/inbox/#{item_id}/unbookmark")))
+      end
+
       # Vote up or down where the network ranks by votes (Reddit), where `can_vote`
       # is true. `direction` is 'up', 'down', or 'none' to take an earlier vote
       # back. An upvote is the same call a like makes, so `liked` moves with it.

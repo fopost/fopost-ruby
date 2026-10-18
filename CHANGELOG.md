@@ -117,6 +117,11 @@ All notable changes to this gem are documented here. The format follows
 
 ### Changed
 
+- `client.blog` matches the live API contract: the workspace travels as `workspace_id` on the
+  query string, single objects are read bare and lists from `{ data }`, and every response is
+  read in snake_case. `BlogWebsiteTest` now carries `http_status` (what the website answered)
+  instead of `ok`, `status` and `error`; a failed test is still a 502 `Fopost::Error` with
+  `http_status` on its body.
 - `blog.plan_keywords` no longer fills the calendar: results land as `suggested` keywords, and
   `update_keyword(status: 'planned')` picks one and gives it the next free date.
 - `blog.publish_article` and `update_article(publish_at:)` need an article in review (or already

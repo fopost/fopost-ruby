@@ -266,16 +266,103 @@ module Fopost
         )
       end
 
+      # ─── Conversions, pixels and custom conversions ─────────────
+
       # Offline conversions. Identifiers are hashed before they leave FoPost.
-      def upload_conversions(workspace_id:, connection_id:, ad_account_id:, pixel_id:, events:)
-        unwrap(
-          http.post(
-            '/ads/conversions',
-            { 'workspaceId' => workspace_id, 'connectionId' => connection_id,
-              'adAccountId' => ad_account_id, 'pixelId' => pixel_id,
-              'events' => events.map { |e| stringify(e) } }
-          )
+      # Pass `idempotency_key` to make a retry safe; answers `replayed: true`
+      # when the key was seen before.
+      def upload_conversions(workspace_id:, connection_id:, ad_account_id:, pixel_id:, events:,
+                             idempotency_key: nil)
+        post_conversions('/ads/conversions', workspace_id, connection_id, ad_account_id, pixel_id, events,
+                         idempotency_key)
+      end
+
+      # The Conversions API send: the same body as `upload_conversions`, but
+      # the key is required and travels as the `Idempotency-Key` header.
+      def send_conversions(workspace_id:, connection_id:, ad_account_id:, pixel_id:, events:, idempotency_key:)
+        post_conversions('/ads/conversions/events', workspace_id, connection_id, ad_account_id, pixel_id, events,
+                         idempotency_key)
+      end
+
+      # Batches sent so far, newest first. Events carry hashes, never raw identifiers.
+      def conversion_batches(workspace_id: nil, connection_id: nil, limit: nil)
+        query = meta_query(workspace_id, connection_id).merge('limit' => limit)
+        parse_list(ConversionBatch, unwrap(http.get('/ads/conversions/events', query)))
+      end
+
+      def pixels(connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(AdPixel, unwrap(http.get('/ads/pixels', account_query(workspace_id, connection_id, ad_account_id))))
+      end
+
+      def create_pixel(workspace_id:, connection_id:, ad_account_id:, name:)
+        body = account_body(workspace_id, connection_id, ad_account_id).merge('name' => name)
+        AdPixelDetail.new(unwrap(http.post('/ads/pixels', body)))
+      end
+
+      def get_pixel(pixel_id, connection_id:, ad_account_id:, workspace_id: nil)
+        AdPixelDetail.new(unwrap(http.get("/ads/pixels/#{pixel_id}",
+                                          account_query(workspace_id, connection_id, ad_account_id))))
+      end
+
+      # `data_use_setting` is "advertising_and_analytics" or "analytics_only".
+      def update_pixel(pixel_id, workspace_id:, connection_id:, ad_account_id:, name: nil, data_use_setting: nil)
+        body = account_body(workspace_id, connection_id, ad_account_id)
+               .merge('name' => name, 'dataUseSetting' => data_use_setting)
+        AdPixelDetail.new(unwrap(http.patch("/ads/pixels/#{pixel_id}", compact_nil(body))))
+      end
+
+      # Share the pixel with another ad account under the same business portfolio.
+      def share_pixel(pixel_id, workspace_id:, connection_id:, ad_account_id:, target_ad_account_id:)
+        body = account_body(workspace_id, connection_id,
+                            ad_account_id).merge('targetAdAccountId' => target_ad_account_id)
+        http.post("/ads/pixels/#{pixel_id}/share", body)
+        nil
+      end
+
+      # Event counts over the last 28 days.
+      def pixel_stats(pixel_id, connection_id:, ad_account_id:, workspace_id: nil)
+        AdPixelStats.new(unwrap(http.get("/ads/pixels/#{pixel_id}/stats",
+                                         account_query(workspace_id, connection_id, ad_account_id))))
+      end
+
+      def pixel_match_quality(pixel_id, connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(EventMatchQuality, unwrap(http.get("/ads/pixels/#{pixel_id}/match-quality",
+                                                      account_query(workspace_id, connection_id, ad_account_id))))
+      end
+
+      def custom_conversions(connection_id:, ad_account_id:, workspace_id: nil)
+        parse_list(CustomConversion, unwrap(http.get('/ads/custom-conversions',
+                                                     account_query(workspace_id, connection_id, ad_account_id))))
+      end
+
+      # `event_type` is one of the network's standard types ("PURCHASE", "LEAD", ...);
+      # `rule` is `{ event_name:, url_contains: }` or `{ event_name:, url_equals: }`.
+      def create_custom_conversion(workspace_id:, connection_id:, ad_account_id:, pixel_id:, name:, event_type:,
+                                   rule:, description: nil, default_value_minor: nil)
+        body = account_body(workspace_id, connection_id, ad_account_id).merge(
+          'pixelId' => pixel_id, 'name' => name, 'eventType' => event_type, 'rule' => camelize(rule),
+          'description' => description, 'defaultValueMinor' => default_value_minor
         )
+        CustomConversion.new(unwrap(http.post('/ads/custom-conversions', compact_nil(body))))
+      end
+
+      def get_custom_conversion(conversion_id, connection_id:, ad_account_id:, workspace_id: nil)
+        CustomConversion.new(unwrap(http.get("/ads/custom-conversions/#{conversion_id}",
+                                             account_query(workspace_id, connection_id, ad_account_id))))
+      end
+
+      def update_custom_conversion(conversion_id, workspace_id:, connection_id:, ad_account_id:, name: nil,
+                                   description: nil, default_value_minor: nil)
+        body = account_body(workspace_id, connection_id, ad_account_id).merge(
+          'name' => name, 'description' => description, 'defaultValueMinor' => default_value_minor
+        )
+        CustomConversion.new(unwrap(http.patch("/ads/custom-conversions/#{conversion_id}", compact_nil(body))))
+      end
+
+      def delete_custom_conversion(conversion_id, workspace_id:, connection_id:, ad_account_id:)
+        http.delete("/ads/custom-conversions/#{conversion_id}",
+                    account_body(workspace_id, connection_id, ad_account_id))
+        nil
       end
 
       # One page of an ad's comments; pass `next_cursor` back as `after`.
@@ -1025,6 +1112,25 @@ module Fopost
 
       def account_query(workspace_id, connection_id, ad_account_id)
         meta_query(workspace_id, connection_id).merge('ad_account_id' => ad_account_id)
+      end
+
+      def account_body(workspace_id, connection_id, ad_account_id)
+        { 'workspaceId' => workspace_id, 'connectionId' => connection_id, 'adAccountId' => ad_account_id }
+      end
+
+      def post_conversions(path, workspace_id, connection_id, ad_account_id, pixel_id, events, idempotency_key)
+        body = account_body(workspace_id, connection_id, ad_account_id).merge(
+          'pixelId' => pixel_id, 'events' => events.map { |e| camelize(e) }
+        )
+        ConversionUploadResult.new(unwrap(
+                                     http.request(:post, path, json: body,
+                                                               headers: { 'Idempotency-Key' => idempotency_key })
+                                   ))
+      end
+
+      # Callers pass snake_case keywords; every ads body is camelCase.
+      def camelize(hash)
+        hash.to_h.transform_keys { |k| k.to_s.gsub(/_([a-z])/) { Regexp.last_match(1).upcase } }
       end
 
       def reach_frequency_action(prediction_id, action, workspace_id, connection_id, ad_account_id)

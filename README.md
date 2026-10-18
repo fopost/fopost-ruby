@@ -688,6 +688,23 @@ client.ads.ad_insights(ad.id, workspace_id: workspace.id, since: '2026-09-01', u
 client.ads.subscribe_lead_page(workspace_id: workspace.id, connection_id: conn, page_id: '42')
 page = client.ads.leads_feed(workspace_id: workspace.id, limit: 50)
 page = client.ads.leads_feed(workspace_id: workspace.id, cursor: page.next_cursor) if page.next_cursor
+
+# Pixels and the Conversions API. Identifiers are hashed before they leave FoPost
+# and only the hashes are stored; amounts are minor units.
+pixel = client.ads.create_pixel(workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123',
+                                name: 'Site')
+pixel.code   # the script to place on the site
+client.ads.send_conversions(
+  workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123', pixel_id: pixel.id,
+  idempotency_key: 'order-77',   # sent as Idempotency-Key; a retry answers replayed: true
+  events: [{ event_name: 'Purchase', occurred_at: Time.now, action_source: 'website',
+             email: 'buyer@yourbrand.com', value_minor: 1999, currency: 'USD', order_id: '77' }]
+)
+client.ads.pixel_match_quality(pixel.id, workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123')
+client.ads.create_custom_conversion(
+  workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123', pixel_id: pixel.id,
+  name: 'Checkout', event_type: 'PURCHASE', rule: { event_name: 'PageView', url_contains: '/thank-you' }
+)
 ```
 
 | Group | Methods |
@@ -699,7 +716,9 @@ page = client.ads.leads_feed(workspace_id: workspace.id, cursor: page.next_curso
 | Networks | `providers`, `authorize` |
 | Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `add_audience_companies`, `estimate_reach` |
 | Forecasts | `bid_pricing`, `supply_forecast` |
-| Conversions | `conversion_rules`, `create_conversion_rule`, `get_conversion_rule`, `update_conversion_rule`, `delete_conversion_rule`, `attach_conversion_rule`, `detach_conversion_rule`, `conversion_metrics`, `send_conversion_events` |
+| Conversions | `upload_conversions`, `send_conversions`, `conversion_batches`, `conversion_rules`, `create_conversion_rule`, `get_conversion_rule`, `update_conversion_rule`, `delete_conversion_rule`, `attach_conversion_rule`, `detach_conversion_rule`, `conversion_metrics`, `send_conversion_events` |
+| Pixels | `pixels`, `create_pixel`, `get_pixel`, `update_pixel`, `share_pixel`, `pixel_stats`, `pixel_match_quality` |
+| Custom conversions | `custom_conversions`, `create_custom_conversion`, `get_custom_conversion`, `update_custom_conversion`, `delete_custom_conversion` |
 | Ad library | `ad_library` |
 | Insights | `insights`, `ad_insights` |
 | Leads | `get_lead_form`, `archive_lead_form`, `leads_feed`, `lead_pages`, `subscribe_lead_page`, `unsubscribe_lead_page` |

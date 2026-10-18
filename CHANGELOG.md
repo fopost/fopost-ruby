@@ -27,6 +27,41 @@ All notable changes to this gem are documented here. The format follows
   `ConversionUploadResult` (`id`, `accepted`, `event_count`, `replayed`); `result['accepted']`
   still reads.
 
+## [0.4.0] - 2026-10-18
+
+### Added
+
+- `queue` resource for the posting queue: `slots`, `create_slot`, `update_slot`, `delete_slot`,
+  `next` and `preview` (`posts` scope), with the `QueueSlot`, `QueueSlotUpdated`,
+  `QueueSlotDeleted` and `QueueSlotMove` models. `posts.create` and `posts.update` take
+  `schedule: 'queue'` to land the post in the next free slot.
+- `posts.unpublish` takes a published post down on every network (`publish` scope) and
+  answers an `UnpublishResult`.
+- `posts.validate_bulk_import` and `posts.commit_bulk_import` send a CSV as multipart and
+  answer `BulkImportValidation` and `BulkImportResult`.
+- `connect_sessions` resource: `create` and `get` for hosted connect links (`accounts`
+  scope), with the `ConnectSession` model.
+- `webhooks` resource (`Resources::WebhookEndpoints`, beside the unchanged
+  `Fopost::Webhooks.verify`): `list`, `create`, `update`, `delete`, `test`, `deliveries`,
+  `get_delivery` and `redeliver` (`webhooks` scope), with the `Webhook` and `WebhookDelivery`
+  models.
+- `automations` resource: `list`, `create`, `stats`, `get`, `update`, `delete`, `versions`,
+  `get_version`, `restore_version`, `runs` and `get_run` (`automations` scope), with the
+  `Automation`, `AutomationGraph`, `AutomationStats`, `AutomationVersion`,
+  `AutomationRestoredVersion` and `AutomationRun` models.
+- `logs.list` reads the API request log (`workspaces` scope) as a `RequestLogPage`.
+- `workspaces.create`, `update` and `delete`; `Workspace` reads `connect_redirect_domains`
+  and `updated_at`.
+- `labels.create`, `get`, `update` and `delete`; `Label` reads `created_at` and `updated_at`.
+- `accounts.list_communities`, `sync_communities`, `search_communities`, `add_community` and
+  `remove_community` for X communities, with the `Community`, `CommunitySearchResult` and
+  `CommunitySync` models.
+- `analytics.overview`, `time_series`, `top_posts`, `labels`, `posts_table`, `posting_streak`,
+  `demographics`, `inbox` and `collect`, each with its own model.
+- `media.list`, `media.upload` (multipart through the API) and `media.delete`; `MediaItem`
+  reads the library fields (`mime_type`, `tags`, `folder_id`, `brand_role`, `share`, ...).
+- `OffsetPageMeta` for the lists that answer `page`, `per_page`, `total`, `total_pages`.
+
 ## [0.3.0] - 2026-10-18
 
 ### Added
@@ -216,7 +251,8 @@ Initial release.
 - Response models that accept either wire casing and keep unknown fields on `#raw`.
 - A pluggable transport, so the HTTP stack can be swapped or stubbed.
 
-[Unreleased]: https://github.com/fopost/fopost-ruby/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/fopost/fopost-ruby/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.4.0
 [0.3.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.3.0
 [0.2.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.2.0
 [0.1.0]: https://github.com/fopost/fopost-ruby/releases/tag/v0.1.0

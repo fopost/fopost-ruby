@@ -10,11 +10,10 @@ module Fopost
   # Raised when a webhook delivery cannot be trusted.
   class WebhookSignatureError < StandardError; end
 
-  # Verifies the signature FoPost puts on every outbound webhook, including
-  # the website target of the blog.
+  # Verifies the signature FoPost puts on every outbound webhook.
   #
   #   event = Fopost::Webhooks.verify(request.raw_post, request.headers, secret)
-  #   event.article.title if event.event == 'article.published'
+  #   event.data['id'] if event.event == 'post.published'
   #
   # Verify the raw request bytes, never re-serialised JSON: key order and
   # whitespace change the bytes and the signature no longer matches.

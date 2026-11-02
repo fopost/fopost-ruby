@@ -560,56 +560,6 @@ client.sequences.enrollments(sequence.id).each do |e|
   puts "#{e.display_name} — step #{e.step}, #{e.status}"
 end
 ```
-## Blog
-
-Articles written for a website, as opposed to posts that go to a social network. Reads, settings, keyword edits and `submit_article` need the `posts` scope; `suggest_seeds`, `plan_keywords`, `request_article` and `regenerate_article` spend credits and need `ai`; `publish_article` needs `publish`.
-
-Planning starts from the blog's goal. Suggest search terms, research them, then pick the keywords worth writing; a picked keyword takes the next free date on the calendar.
-
-```ruby
-client.blog.update_settings(workspace_id, goal: 'leads', focus_topics: 'Trail running gear')
-
-seeds = client.blog.suggest_seeds(workspace_id, prompt: 'Beginners, not racers')
-client.blog.plan_keywords(workspace_id, seeds: seeds)
-client.blog.get_settings(workspace_id).plan_run&.status # => "done"
-
-client.blog.list_keywords(workspace_id, status: 'suggested').first(3).each do |keyword|
-  client.blog.update_keyword(workspace_id, keyword.id, status: 'planned')
-end
-```
-
-Every article is approved before it publishes: submit a draft for review, then publish it or give it a `publish_at`.
-
-```ruby
-article = client.blog.request_article(
-  workspace_id,
-  keyword: 'best trail running shoes',
-  instructions: 'Lead with a comparison table.'
-)
-article.status # => "queued"
-
-# Later, once it is a draft.
-full = client.blog.get_article(workspace_id, article.id)
-puts full.body_markdown
-client.blog.submit_article(workspace_id, article.id) # => status "in_review"
-client.blog.publish_article(workspace_id, article.id)
-```
-
-The Website target delivers every published article to `website_url` as a signed webhook. Setting the URL answers `website_secret` once; verify the raw request bytes with it, never a re-serialised body:
-
-```ruby
-# Rails: request.raw_post and request.headers; Rack: env['rack.input'].read and env
-event = Fopost::Webhooks.verify(raw_body, headers, ENV['FOPOST_WEBSITE_SECRET'])
-if event.event == 'article.published'
-  article = event.article # Fopost::BlogArticlePublished
-  store(article.slug, article.body_html, article.featured_image&.url)
-end
-rescue Fopost::WebhookSignatureError
-  head :unauthorized
-```
-
-`verify` prefers the timestamped `X-FoPost-Signature-256` header and rejects a timestamp more than 300 seconds off; it falls back to `X-FoPost-Signature` only when no timestamp was sent. The same helper verifies every other FoPost webhook.
-
 ## Knowledge
 
 What the workspace has told FoPost about itself. Retrieval over these sources
@@ -890,7 +840,7 @@ client.analytics.timeline('https://x.com/acme/status/1')
 
 ## Webhooks
 
-Outbound webhooks and their delivery log (`webhooks` scope). Verifying an inbound delivery is `Fopost::Webhooks.verify`, further down.
+Outbound webhooks and their delivery log (`webhooks` scope). Verifying an inbound delivery is `Fopost::Webhooks.verify`, below.
 
 ```ruby
 webhook = client.webhooks.create(workspace_id: workspace.id, url: 'https://yourbrand.com/hooks/fopost',
@@ -907,6 +857,18 @@ end
 client.webhooks.get_delivery(webhook.id, delivery_id).payload
 client.webhooks.delete(webhook.id)
 ```
+
+Verify the raw request bytes with the webhook's secret, never a re-serialised body:
+
+```ruby
+# Rails: request.raw_post and request.headers; Rack: env['rack.input'].read and env
+event = Fopost::Webhooks.verify(raw_body, headers, ENV['FOPOST_WEBHOOK_SECRET'])
+event.event # => "post.published"
+rescue Fopost::WebhookSignatureError
+  head :unauthorized
+```
+
+`verify` prefers the timestamped `X-FoPost-Signature-256` header and rejects a timestamp more than 300 seconds off; it falls back to `X-FoPost-Signature` only when no timestamp was sent.
 
 ## Automations
 

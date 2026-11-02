@@ -35,6 +35,15 @@ All notable changes to this gem are documented here. The format follows
   `ConversionUploadResult` (`id`, `accepted`, `event_count`, `replayed`); `result['accepted']`
   still reads.
 
+### Removed
+
+- `client.blog` and the retired `/v1/blog/*` endpoints it wrapped (settings, website secret
+  and test, destinations, keywords, articles), with the `BlogSettings`, `BlogSettingsUpdate`,
+  `BlogPlanRun`, `BlogWebsiteTest`, `BlogKeyword`, `BlogArticle`, `BlogArticleFull`,
+  `BlogArticleImage` and `BlogArticlePublished` models, `WebhookEvent#article`, and the
+  `BLOG_ARTICLE_STATUSES`, `BLOG_KEYWORD_STATUSES` and `BLOG_TARGET_KINDS` constants. Articles
+  are ordinary posts now; `client.blogs` (remote articles on a connected site) is unchanged.
+
 ## [0.4.0] - 2026-10-18
 
 ### Added

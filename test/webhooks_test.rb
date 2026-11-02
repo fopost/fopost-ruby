@@ -8,24 +8,8 @@ class WebhooksTest < Minitest::Test
   NOW = Time.utc(2026, 10, 11, 12, 0, 0)
 
   PAYLOAD = {
-    'event' => 'article.published',
-    'data' => {
-      'id' => 'art_1',
-      'title' => 'The best trail running shoes of 2026',
-      'slug' => 'best-trail-running-shoes-2026',
-      'excerpt' => nil,
-      'metaTitle' => nil,
-      'metaDescription' => nil,
-      'bodyMarkdown' => '# Shoes',
-      'bodyHtml' => '<h1>Shoes</h1>',
-      'featuredImage' => { 'mediaId' => 'med_1', 'url' => 'https://cdn.yourbrand.com/a.jpg', 'alt' => 'Shoes' },
-      'images' => [],
-      'tags' => ['shoes'],
-      'keyword' => 'trail shoes',
-      'wordCount' => 1200,
-      'publishedAt' => '2026-10-11T11:59:00.000Z',
-      'publishedUrl' => 'https://yourbrand.com/blog/best-trail-running-shoes-2026'
-    },
+    'event' => 'post.published',
+    'data' => { 'id' => 'post_1', 'status' => 'published' },
     'timestamp' => '2026-10-11T11:59:30.000Z'
   }.freeze
 
@@ -43,7 +27,7 @@ class WebhooksTest < Minitest::Test
       'X-FoPost-Signature' => hmac(body),
       'X-FoPost-Timestamp' => timestamp.to_s,
       'X-FoPost-Signature-256' => hmac("#{timestamp}.#{body}"),
-      'X-FoPost-Event' => 'article.published'
+      'X-FoPost-Event' => 'post.published'
     }
   end
 
@@ -51,20 +35,13 @@ class WebhooksTest < Minitest::Test
     event = Fopost::Webhooks.verify(raw_body, timestamped_headers, SECRET, now: NOW)
 
     assert_instance_of Fopost::WebhookEvent, event
-    assert_equal 'article.published', event.event
+    assert_equal 'post.published', event.event
     assert_equal Time.utc(2026, 10, 11, 11, 59, 30), event.timestamp
-    assert_equal 'art_1', event.data['id']
-
-    article = event.article
-
-    assert_instance_of Fopost::BlogArticlePublished, article
-    assert_equal 'https://yourbrand.com/blog/best-trail-running-shoes-2026', article.published_url
-    assert_equal 'Shoes', article.featured_image.alt
-    assert_equal 1200, article.word_count
+    assert_equal 'post_1', event.data['id']
   end
 
   def test_a_tampered_body_fails
-    tampered = raw_body.sub('art_1', 'art_2')
+    tampered = raw_body.sub('post_1', 'post_2')
 
     assert_raises(Fopost::WebhookSignatureError) do
       Fopost::Webhooks.verify(tampered, timestamped_headers, SECRET, now: NOW)
@@ -91,7 +68,7 @@ class WebhooksTest < Minitest::Test
   def test_the_plain_body_signature_passes_only_when_no_timestamp_was_sent
     event = Fopost::Webhooks.verify(raw_body, { 'x-fopost-signature' => hmac(raw_body) }, SECRET, now: NOW)
 
-    assert_equal 'article.published', event.event
+    assert_equal 'post.published', event.event
 
     assert_raises(Fopost::WebhookSignatureError) do
       Fopost::Webhooks.verify(raw_body, { 'x-fopost-signature' => hmac('other') }, SECRET, now: NOW)
@@ -103,7 +80,7 @@ class WebhooksTest < Minitest::Test
     headers = { 'HTTP_X_FOPOST_SIGNATURE_256' => hmac("#{NOW.to_i}.#{raw_body}"),
                 'HTTP_X_FOPOST_TIMESTAMP' => NOW.to_i }
 
-    assert_equal 'article.published', Fopost::Webhooks.verify(raw_body, headers, SECRET, now: NOW).event
+    assert_equal 'post.published', Fopost::Webhooks.verify(raw_body, headers, SECRET, now: NOW).event
   end
 
   def test_a_missing_secret_is_refused_before_any_compare

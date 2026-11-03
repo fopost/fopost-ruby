@@ -440,6 +440,7 @@ client.inbox.hide(item.id)
 client.inbox.mark_thread_read(workspace_id: workspace.id, account_id: item.account.id,
                               post_external_id: item.post_external_id)
 client.inbox.refresh(workspace_id: workspace.id)
+client.inbox.resolve(workspace_id: workspace.id, type: 'comment', before: Time.now - (7 * 86_400))
 
 client.inbox.approvals(workspace_id: workspace.id).each { |a| client.inbox.approve_reply(a.id) }
 ```

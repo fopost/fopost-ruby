@@ -72,6 +72,21 @@ module Fopost
         page_of(InboxConversation, body)
       end
 
+      # Resolve every unanswered item of `type` (comment, mention, review or dm),
+      # optionally only on `account_id` (one id or an array) or only items dated
+      # before `before`. Nothing reaches a platform. Returns how many changed.
+      def resolve(workspace_id:, type:, account_id: nil, before: nil)
+        body = compact_nil(
+          'workspace_id' => workspace_id,
+          'type' => type,
+          'account_id' => account_id.nil? ? nil : Array(account_id),
+          'before' => iso8601(before)
+        )
+        result = unwrap(http.post('/inbox/resolve', body))
+        resolved = result.is_a?(Hash) ? result['resolved'] : nil
+        resolved.is_a?(Integer) ? resolved : 0
+      end
+
       def unread_count(workspace_id: nil)
         body = http.get('/inbox/unread-count', { 'workspace_id' => workspace_id })
         count = body.is_a?(Hash) ? body['count'] : nil

@@ -8,6 +8,9 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `inbox.resolve(workspace_id:, type:, account_id: nil, before: nil)` resolves every
+  unanswered item of one type, optionally only on some accounts or only items dated before
+  `before`, and returns how many changed. Nothing is sent to a platform.
 - `inbox.list`, `inbox.threads` and `inbox.conversations` take `status:` (`unanswered`,
   `replied` or `resolved`) and `since:` (a `Time` or ISO 8601 string), and `account_id:`
   accepts an array of ids.

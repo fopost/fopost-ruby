@@ -77,6 +77,17 @@ class InboxTest < Minitest::Test
     assert_equal 2, conversations[0].unread_count
   end
 
+  def test_resolve_posts_the_type_and_account_ids_as_an_array
+    transport.stub(:post, '/inbox/resolve', json: { 'data' => { 'resolved' => 7 } })
+
+    resolved = client.inbox.resolve(workspace_id: 'ws_1', type: 'comment', account_id: 'acc_1',
+                                    before: Time.utc(2026, 9, 1))
+
+    assert_equal 7, resolved
+    assert_equal({ 'workspace_id' => 'ws_1', 'type' => 'comment', 'account_id' => ['acc_1'],
+                   'before' => '2026-09-01T00:00:00Z' }, transport.last.json)
+  end
+
   def test_unread_count_answers_bare
     transport.stub(:get, '/inbox/unread-count', json: { 'count' => 7 })
 

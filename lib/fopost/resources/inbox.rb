@@ -7,24 +7,24 @@ module Fopost
     class Inbox < Base
       # One page of items, newest first. The result is Enumerable over its items.
       #
-      # `type` is comment, mention, review or dm; `state` is unread, read, resolved or
-      # snoozed; `sort` is newest, oldest or unanswered.
-      def list(workspace_id: nil, type: nil, state: nil, platform: nil, account_id: nil, post_id: nil,
-               post_external_id: nil, conversation_id: nil, direction: nil, q: nil, sort: nil,
+      # `type` is comment, mention, review or dm; `status` is unanswered, replied or
+      # resolved; `account_id` is one id or an array of them; `since` is a Time or an
+      # ISO 8601 string; `sort` is newest or oldest.
+      def list(workspace_id: nil, type: nil, status: nil, account_id: nil, since: nil, post_id: nil,
+               post_external_id: nil, conversation_id: nil, direction: nil, sort: nil,
                page: 1, per_page: 25)
         body = http.get(
           '/inbox',
           {
             'workspace_id' => workspace_id,
             'type' => type,
-            'state' => state,
-            'platform' => platform,
-            'account_id' => account_id,
+            'status' => status,
+            'account_id' => joined_ids(account_id),
+            'since' => iso8601(since),
             'post_id' => post_id,
             'post_external_id' => post_external_id,
             'conversation_id' => conversation_id,
             'direction' => direction,
-            'q' => q,
             'sort' => sort,
             'page' => page,
             'per_page' => per_page
@@ -36,17 +36,16 @@ module Fopost
       # One row per post with comments; `kind: 'mentions'` for posts the
       # account was tagged in, `kind: 'reviews'` for one row per review left
       # on the business, each carrying its rating.
-      def threads(workspace_id: nil, kind: nil, platform: nil, account_id: nil, state: nil, q: nil,
+      def threads(workspace_id: nil, kind: nil, account_id: nil, status: nil, since: nil,
                   sort: nil, page: 1, per_page: 25)
         body = http.get(
           '/inbox/posts',
           {
             'workspace_id' => workspace_id,
             'kind' => kind,
-            'platform' => platform,
-            'account_id' => account_id,
-            'state' => state,
-            'q' => q,
+            'account_id' => joined_ids(account_id),
+            'status' => status,
+            'since' => iso8601(since),
             'sort' => sort,
             'page' => page,
             'per_page' => per_page
@@ -56,16 +55,15 @@ module Fopost
       end
 
       # One row per DM thread, latest first.
-      def conversations(workspace_id: nil, platform: nil, account_id: nil, state: nil, q: nil, sort: nil,
+      def conversations(workspace_id: nil, account_id: nil, status: nil, since: nil, sort: nil,
                         page: 1, per_page: 25)
         body = http.get(
           '/inbox/conversations',
           {
             'workspace_id' => workspace_id,
-            'platform' => platform,
-            'account_id' => account_id,
-            'state' => state,
-            'q' => q,
+            'account_id' => joined_ids(account_id),
+            'status' => status,
+            'since' => iso8601(since),
             'sort' => sort,
             'page' => page,
             'per_page' => per_page
@@ -236,6 +234,12 @@ module Fopost
         items = parse_list(model, body.is_a?(Hash) ? body['data'] : body)
         raw_meta = body.is_a?(Hash) ? body['meta'] : nil
         Page.new(items: items, meta: InboxPageMeta.new(raw_meta.is_a?(Hash) ? raw_meta : {}))
+      end
+
+      def joined_ids(value)
+        return value unless value.is_a?(Array)
+
+        value.empty? ? nil : value.join(',')
       end
     end
   end

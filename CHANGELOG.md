@@ -8,6 +8,9 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `inbox.list`, `inbox.threads` and `inbox.conversations` take `status:` (`unanswered`,
+  `replied` or `resolved`) and `since:` (a `Time` or ISO 8601 string), and `account_id:`
+  accepts an array of ids.
 - Ads tracking on `client.ads` (scope `ads`): `send_conversions` sends through the
   Conversions API with a required `idempotency_key:` (the `Idempotency-Key` header), and
   `conversion_batches` lists what was sent with identifiers as hashes. Pixels: `pixels`,
@@ -36,6 +39,10 @@ All notable changes to this gem are documented here. The format follows
   still reads.
 
 ### Removed
+
+- **Breaking:** the `state:`, `platform:` and `q:` filters on `inbox.list`, `inbox.threads`
+  and `inbox.conversations`, and `sort: 'unanswered'`. Filter with `status:` and
+  `account_id:`; `sort:` is `newest` or `oldest`.
 
 - `client.blog` and the retired `/v1/blog/*` endpoints it wrapped (settings, website secret
   and test, destinations, keywords, articles), with the `BlogSettings`, `BlogSettingsUpdate`,

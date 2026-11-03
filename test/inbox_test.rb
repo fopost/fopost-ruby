@@ -28,12 +28,14 @@ class InboxTest < Minitest::Test
                      'meta' => { 'page' => 2, 'perPage' => 10, 'total' => 41 }
                    })
 
-    page = client.inbox.list(workspace_id: 'ws_1', type: 'comment', state: 'unread', sort: 'unanswered',
+    page = client.inbox.list(workspace_id: 'ws_1', type: 'comment', status: 'unanswered',
+                             account_id: %w[acc_1 acc_2], since: Time.utc(2026, 9, 1), sort: 'oldest',
                              page: 2, per_page: 10)
 
     assert_equal 'GET', transport.last.method
     assert_equal '/v1/inbox', transport.last.path
-    assert_equal({ 'workspace_id' => 'ws_1', 'type' => 'comment', 'state' => 'unread', 'sort' => 'unanswered',
+    assert_equal({ 'workspace_id' => 'ws_1', 'type' => 'comment', 'status' => 'unanswered',
+                   'account_id' => 'acc_1,acc_2', 'since' => '2026-09-01T00:00:00Z', 'sort' => 'oldest',
                    'page' => '2', 'per_page' => '10' }, transport.last.query)
 
     assert_equal 41, page.meta.total
@@ -62,10 +64,10 @@ class InboxTest < Minitest::Test
               'meta' => { 'page' => 1, 'perPage' => 25, 'total' => 1 }
             })
 
-    threads = client.inbox.threads(workspace_id: 'ws_1', kind: 'mentions')
+    threads = client.inbox.threads(workspace_id: 'ws_1', kind: 'mentions', status: 'replied', account_id: 'acc_1')
 
-    assert_equal({ 'workspace_id' => 'ws_1', 'kind' => 'mentions', 'page' => '1', 'per_page' => '25' },
-                 transport.last.query)
+    assert_equal({ 'workspace_id' => 'ws_1', 'kind' => 'mentions', 'account_id' => 'acc_1', 'status' => 'replied',
+                   'page' => '1', 'per_page' => '25' }, transport.last.query)
     assert_equal 3, threads[0].comment_count
     assert threads[0].post.is_own
 

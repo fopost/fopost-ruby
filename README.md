@@ -149,6 +149,9 @@ batch = client.posts.commit_bulk_import(workspace_id: workspace.id, file: 'posts
 batch.created
 ```
 
+Both calls take an optional `accounts:` list of account ids or platform names, applied to every
+row whose own `accounts` cell is empty.
+
 ### Workspaces and labels
 
 ```ruby

@@ -24,6 +24,7 @@ class BulkImportTest < Minitest::Test
     assert_includes transport.last.body, 'ws_1'
     assert_includes transport.last.body, 'name="file"; filename="posts.csv"'
     assert_includes transport.last.body, CSV
+    refute_includes transport.last.body, 'name="accounts"'
     assert_equal 1, result.valid_rows
     assert_equal Time.utc(2026, 11, 1, 10, 0, 0), result.rows[0].schedule_at
   end
@@ -35,9 +36,11 @@ class BulkImportTest < Minitest::Test
                    })
 
     result = client.posts.commit_bulk_import(workspace_id: 'ws_1',
-                                             file: { filename: 'posts.csv', data: CSV, mime_type: 'text/csv' })
+                                             file: { filename: 'posts.csv', data: CSV, mime_type: 'text/csv' },
+                                             accounts: %w[twitter linkedin])
 
     assert_equal '/v1/posts/bulk-import/commit', transport.last.path
+    assert_includes transport.last.body, "name=\"accounts\"\r\n\r\ntwitter,linkedin"
     assert_equal 'batch_1', result.batch_id
     assert_equal 'post_1', result.posts[0].id
   end

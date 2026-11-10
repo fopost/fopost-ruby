@@ -181,23 +181,26 @@ module Fopost
       end
 
       # Check a bulk-import CSV row by row without creating anything. `file` is
-      # a path, an IO, or a `{ filename:, io:/data: }` hash.
-      def validate_bulk_import(workspace_id:, file:)
-        BulkImportValidation.new(unwrap(bulk_import('/posts/bulk-import/validate', workspace_id, file)))
+      # a path, an IO, or a `{ filename:, io:/data: }` hash. `accounts` (ids or platform
+      # names) applies to rows whose own accounts cell is empty.
+      def validate_bulk_import(workspace_id:, file:, accounts: nil)
+        BulkImportValidation.new(unwrap(bulk_import('/posts/bulk-import/validate', workspace_id, file, accounts)))
       end
 
       # Create every valid row of a bulk-import CSV as a post.
-      def commit_bulk_import(workspace_id:, file:)
-        BulkImportResult.new(unwrap(bulk_import('/posts/bulk-import/commit', workspace_id, file)))
+      def commit_bulk_import(workspace_id:, file:, accounts: nil)
+        BulkImportResult.new(unwrap(bulk_import('/posts/bulk-import/commit', workspace_id, file, accounts)))
       end
 
       private
 
-      def bulk_import(path, workspace_id, file)
+      def bulk_import(path, workspace_id, file, accounts)
         part = FilePart.from(file)
         csv = HTTP::Multipart::Part.new(name: 'file', filename: part.filename, mime_type: part.mime_type,
                                         data: part.data)
-        http.post_multipart(path, fields: { 'workspace_id' => workspace_id }, parts: [csv])
+        fields = { 'workspace_id' => workspace_id }
+        fields['accounts'] = Array(accounts).join(',') unless Array(accounts).empty?
+        http.post_multipart(path, fields: fields, parts: [csv])
       end
 
       # Accept a bare string, one block, or an array of either.

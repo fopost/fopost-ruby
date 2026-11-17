@@ -5,7 +5,6 @@
 /coverage/
 /tmp/
 *.gem
-Gemfile.lock
 .ruby-version
 .rubocop_cache/
 .DS_Store

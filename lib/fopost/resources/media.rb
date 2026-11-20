@@ -53,6 +53,17 @@ module Fopost
         nil
       end
 
+      # Write alt text and tags for an image with AI. Uses AI credits.
+      def generate_alt_text(media_id)
+        AltTextResult.new(unwrap(http.post("/media/#{media_id}/alt-text")))
+      end
+
+      # A fresh signed URL for the item's file.
+      def file_url(media_id)
+        body = unwrap(http.get("/media/#{media_id}/file", { 'format' => 'json' }))
+        body.is_a?(Hash) ? body['url'] : nil
+      end
+
       # The upload ceilings for the account, by connected accounts or add-on.
       def limits(workspace_id: nil)
         UploadLimits.new(unwrap(http.get('/media/limits', { 'workspaceId' => workspace_id })))

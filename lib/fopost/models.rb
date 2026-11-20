@@ -2965,4 +2965,149 @@ module Fopost
     attribute :error_message
     attribute :logs, [AutomationRunLog]
   end
+
+  # A design: its size and kind, plus the document (pages and layers) as a plain Hash.
+  class Design < Model
+    attribute :id
+    attribute :name
+    attribute :kind
+    attribute :width
+    attribute :height
+    attribute :document, :hash
+    attribute :thumbnail_media_id
+    attribute :thumbnail_url
+    attribute :created_at, :time
+    attribute :updated_at, :time
+  end
+
+  # A saved version; `document` is filled only when asked for.
+  class DesignVersion < Model
+    attribute :id
+    attribute :version
+    attribute :document, :hash
+    attribute :created_at, :time
+  end
+
+  class DesignExportFile < Model
+    attribute :media_id
+    attribute :page_index
+    attribute :mime_type
+    attribute :preview_url
+  end
+
+  # Rendered pages, each stored as a media library item.
+  class DesignExport < Model
+    attribute :format
+    attribute :files, [DesignExportFile]
+  end
+
+  # A post that uses one of the design's exports.
+  class DesignPost < Model
+    attribute :id
+    attribute :status
+    attribute :title
+    attribute :text
+    attribute :schedule_at, :time
+    attribute :published_at, :time
+    attribute :platforms
+    attribute :engagement
+    attribute :views
+  end
+
+  class SlidePoint < Model
+    attribute :heading
+    attribute :body
+  end
+
+  # A carousel outline written from text or a post. `cover` is `{ title, subtitle }`,
+  # `brand` the colors, fonts and logo of the brand it used.
+  class SlidesOutline < Model
+    attribute :cover, :hash
+    attribute :slides, [SlidePoint]
+    attribute :cta, SlidePoint
+    attribute :brand, :hash
+  end
+
+  class LibraryFontFile < Model
+    attribute :path
+    attribute :subset
+    attribute :weight
+    attribute :style
+    attribute :unicode_range
+  end
+
+  # A family from the built-in font library.
+  class LibraryFont < Model
+    attribute :slug
+    attribute :family
+    attribute :category
+    attribute :scripts
+    attribute :weights
+    attribute :files, [LibraryFontFile]
+  end
+
+  # A font file uploaded to a workspace.
+  class UploadedFont < Model
+    attribute :id
+    attribute :family
+    attribute :style
+    attribute :weight
+    attribute :format
+    attribute :file_url
+    attribute :created_at, :time
+  end
+
+  class FontList < Model
+    attribute :library, [LibraryFont]
+    attribute :uploaded, [UploadedFont]
+  end
+
+  # One video edit operation and whether this deployment can run it.
+  class VideoEditOp < Model
+    attribute :name
+    attribute :available
+    attribute :uses_ai
+  end
+
+  class VideoEditOperation < Model
+    attribute :op
+    attribute :params, :hash
+  end
+
+  class VideoEditResultMedia < Model
+    attribute :id
+    attribute :preview_url
+    attribute :mime_type
+  end
+
+  # A second file an edit produced, such as a subtitle track or a clip.
+  class VideoEditOutput < Model
+    attribute :media_id
+    attribute :label
+    attribute :mime
+    attribute :preview_url
+  end
+
+  # A video edit job. `status` is queued, running, succeeded or failed.
+  class VideoEdit < Model
+    attribute :id
+    attribute :status
+    attribute :progress
+    attribute :source_media_id
+    attribute :operations, [VideoEditOperation]
+    attribute :result_media_id
+    attribute :result_media, VideoEditResultMedia
+    attribute :extra_outputs, [VideoEditOutput]
+    attribute :result, :hash
+    attribute :error
+    attribute :created_at, :time
+    attribute :updated_at, :time
+    attribute :completed_at, :time
+  end
+
+  class AltTextResult < Model
+    attribute :alt_text
+    attribute :alt_text_source
+    attribute :tags
+  end
 end

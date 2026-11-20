@@ -76,7 +76,7 @@ calls `unwrap` and hands the hash to a model.
   named fields (`Resources::Base#compact_unset`).
 - `Resources::Posts#each` / `#each_page` walk the list endpoint a page at a time.
 
-**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `contacts`, `broadcasts`, `sequences`, `ads`, `validate`, `media`, `queue`, `connect_sessions`, `webhooks`, `automations`, `logs`.
+**Resources wired today:** `posts`, `accounts`, `workspaces`, `labels`, `ai`, `inbox`, `contacts`, `broadcasts`, `sequences`, `ads`, `validate`, `media`, `queue`, `connect_sessions`, `webhooks`, `automations`, `logs`, `designs`, `fonts`, `video_edits`.
 Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspaces` is
 `#list`/`#get`, `accounts` is `#list`/`#get`/`#health`/`#update`/`#move` plus the Telegram connect-code and bot-commands methods and the Slack channels, members and identity methods. `inbox` (scope `inbox`) covers the
 list, thread, conversation, read, refresh, resolve, reply, hide, delete, like, pin, react, edit,

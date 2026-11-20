@@ -759,6 +759,77 @@ upload.max_file_bytes
 client.media.complete(upload.upload_id)
 ```
 
+`generate_alt_text` writes alt text and tags for an image with AI (uses AI credits, needs the `ai` scope too), and `file_url` answers a fresh signed URL for an item's file.
+
+```ruby
+result = client.media.generate_alt_text(item.id)
+result.alt_text
+result.tags
+
+client.media.file_url(item.id) # => "https://..."
+```
+
+## Designs
+
+Designs made in the editor (`story`, `post`, `carousel`, `thumbnail`, `card` or `collage`). The document (pages and layers) is a plain Hash, sent and returned as is. Needs the `posts` scope.
+
+```ruby
+design = client.designs.create(workspace_id: workspace.id, kind: 'story', name: 'Launch Story')
+design.document # => { "pages" => [...] }
+
+client.designs.update(design.id, document: edited_document, create_version: true)
+client.designs.list(workspace_id: workspace.id, kind: 'story', limit: 20)
+client.designs.versions(design.id, include_document: true)
+client.designs.restore_version(design.id, version_id)
+client.designs.duplicate(design.id, name: 'Launch Story (copy)')
+client.designs.delete(design.id)
+
+export = client.designs.export(design.id, format: 'png')
+export.files.each { |file| puts "#{file.page_index} #{file.media_id}" }
+
+# One copy per row, filling the design's placeholders
+client.designs.bulk(design.id, rows: [{ 'name' => 'Ana' }, { 'name' => 'Ben' }], name_column: 'name')
+
+client.designs.posts(design.id) # posts using its exports
+client.designs.from_post(workspace_id: workspace.id, post_id: post.id, style: 'quote')
+
+# A carousel outline from text or a post (AI credits, `ai` scope)
+outline = client.designs.text_to_slides(workspace_id: workspace.id, text: 'Five tips for launch week')
+outline.slides.map(&:heading)
+```
+
+## Fonts
+
+The built-in font library plus fonts uploaded to a workspace (ttf, otf, woff or woff2, up to 5 MB). `upload` takes a path, an IO, or `{ filename:, data:, mime_type: }`.
+
+```ruby
+fonts = client.fonts.list(workspace_id: workspace.id)
+fonts.library.map(&:family)
+fonts.uploaded.map(&:id)
+
+font = client.fonts.upload('BrandSans-Bold.woff2', workspace_id: workspace.id, family: 'Brand Sans', weight: 700)
+client.fonts.delete(font.id)
+```
+
+## Video edits
+
+Edit jobs on a video or audio file in the media library: `operations` is a list of `{ op:, params: }`, run in order. `ops` lists every operation and whether it can run; AI operations (subtitles, clips, voiceover and the like) also need the `ai` scope. Poll `get` until `status` is `succeeded` or `failed`.
+
+```ruby
+client.video_edits.ops.select(&:available).map(&:name)
+
+edit = client.video_edits.create(
+  workspace_id: workspace.id,
+  media_id: item.id,
+  operations: [{ op: 'trim', params: { start: 2, end: 12 } }, { op: 'denoise' }]
+)
+edit = client.video_edits.get(edit.id)
+edit.status
+edit.result_media&.preview_url
+
+client.video_edits.list(workspace_id: workspace.id, media_id: item.id)
+```
+
 ## WhatsApp Business
 
 A WhatsApp Business number you already own. The platform owns the templates,

@@ -8,6 +8,19 @@ All notable changes to this gem are documented here. The format follows
 
 ### Added
 
+- `client.designs` (scope `posts`): `list`, `create`, `get`, `update`, `delete`, `versions`,
+  `restore_version`, `duplicate`, `export`, `bulk`, `posts`, `from_post` and `text_to_slides`
+  (also `ai`). The design document is a plain Hash. New models `Design`, `DesignVersion`,
+  `DesignExport`, `DesignExportFile`, `DesignPost`, `SlidesOutline` and `SlidePoint`.
+- `client.fonts` (scope `posts`): `list`, `upload` (one ttf, otf, woff or woff2 file from a
+  path, IO or Hash) and `delete`. New models `FontList`, `LibraryFont`, `LibraryFontFile` and
+  `UploadedFont`.
+- `client.video_edits` (scope `posts`, AI operations also `ai`): `ops`, `list`, `create` with
+  `operations: [{ op:, params: }]` and `get`. New models `VideoEdit`, `VideoEditOp`,
+  `VideoEditOperation`, `VideoEditResultMedia` and `VideoEditOutput`.
+- `media.generate_alt_text` (answers an `AltTextResult`) and `media.file_url`, a fresh signed
+  URL for an item's file.
+- `FilePart` guesses the mime type of `.ttf`, `.otf`, `.woff` and `.woff2` files.
 - `posts.validate_bulk_import` and `posts.commit_bulk_import` take an optional `accounts:`
   list (account ids or platform names), sent comma-separated and applied to every CSV row
   whose own `accounts` cell is empty.

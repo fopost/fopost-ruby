@@ -13,6 +13,8 @@ require 'fopost/resources/ai'
 require 'fopost/resources/broadcasts'
 require 'fopost/resources/connect_sessions'
 require 'fopost/resources/contacts'
+require 'fopost/resources/designs'
+require 'fopost/resources/fonts'
 require 'fopost/resources/google_business'
 require 'fopost/resources/inbox'
 require 'fopost/resources/activity'
@@ -24,6 +26,7 @@ require 'fopost/resources/posts'
 require 'fopost/resources/queue'
 require 'fopost/resources/blogs'
 require 'fopost/resources/validate'
+require 'fopost/resources/video_edits'
 require 'fopost/resources/webhook_endpoints'
 require 'fopost/resources/whatsapp'
 require 'fopost/resources/workspaces'
@@ -42,7 +45,8 @@ module Fopost
 
     attr_reader :posts, :accounts, :account_groups, :workspaces, :labels, :ai, :inbox, :contacts, :broadcasts,
                 :sequences, :knowledge, :ads, :validate, :media, :activity, :google_business, :analytics,
-                :blogs, :whatsapp, :queue, :connect_sessions, :webhooks, :automations, :logs
+                :blogs, :whatsapp, :queue, :connect_sessions, :webhooks, :automations, :logs,
+                :designs, :fonts, :video_edits
 
     def initialize(api_key: nil, base_url: DEFAULT_BASE_URL, timeout: HTTP::Client::DEFAULT_TIMEOUT,
                    max_retries: HTTP::Client::DEFAULT_MAX_RETRIES, transport: nil, sleeper: nil)
@@ -85,6 +89,9 @@ module Fopost
       @webhooks = Resources::WebhookEndpoints.new(@http)
       @automations = Resources::Automations.new(@http)
       @logs = Resources::Logs.new(@http)
+      @designs = Resources::Designs.new(@http)
+      @fonts = Resources::Fonts.new(@http)
+      @video_edits = Resources::VideoEdits.new(@http)
     end
 
     def base_url

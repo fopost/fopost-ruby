@@ -2,18 +2,16 @@
 
 module Fopost
   module Resources
-    # `client.ads` — ads, catalogs, audiences, the ad archive and lead forms.
+    # `client.ads` — boosts, standalone ads, audiences and lead forms.
     #
     # The connection decides which network a call reaches. Meta is what this
     # resource documents; the Google-only surface is `client.ads.google`, and
     # `#providers` reports what each network supports.
     #
-    # Every method needs the `ads` scope. {#boost}, {#create}, {#set_status}
-    # and {#delete} spend money and also need `publish`, as do the create,
-    # update, delete and duplicate methods for campaigns, ad sets and network
-    # ads, and {#bulk_set_status}.
+    # Every method needs the `ads` scope. {#boost}, {#create}, {#set_status},
+    # {#delete} and {#bulk_set_status} spend money and also need `publish`.
     class Ads < Base
-      # The Search surface no other network has: keywords, assets, conversions, GAQL.
+      # The Search surface no other network has: bid strategies, ad schedules, conversions, GAQL.
       def google
         @google ||= GoogleAds.new(http)
       end
@@ -216,15 +214,6 @@ module Fopost
         )
       end
 
-      # Campaigns, ad sets and ads on one ad account, read live from Meta.
-      def account_tree(ad_account_id, connection_id:, workspace_id: nil)
-        AdAccountTree.new(
-          unwrap(http.get("/ads/accounts/#{ad_account_id}/tree", meta_query(workspace_id, connection_id)))
-        )
-      end
-
-      # `goal` is engagement, traffic, awareness or video_views. Starts paused
-      # unless `paused: false`. Needs `ads` and `publish`.
       # TikTok's Business Centers, the one network-named read in this resource.
       def tiktok_business_centers(connection_id:, workspace_id: nil)
         parse_list(
@@ -409,122 +398,6 @@ module Fopost
         nil
       end
 
-      def create_campaign(workspace_id:, connection_id:, ad_account_id:, name:, goal:, paused: nil,
-                          smart_plus: nil)
-        body = {
-          'workspaceId' => workspace_id,
-          'connectionId' => connection_id,
-          'adAccountId' => ad_account_id,
-          'name' => name,
-          'goal' => goal
-        }
-        body['paused'] = paused unless paused.nil?
-        body['smartPlus'] = smart_plus unless smart_plus.nil?
-        AdCampaign.new(unwrap(http.post('/ads/campaigns', body)))
-      end
-
-      def get_campaign(campaign_id, connection_id:, workspace_id: nil)
-        AdCampaign.new(unwrap(http.get("/ads/campaigns/#{campaign_id}", meta_query(workspace_id, connection_id))))
-      end
-
-      # `status` is "active" or "paused". Needs `ads` and `publish`.
-      def update_campaign(campaign_id, workspace_id:, connection_id:, name: nil, status: nil)
-        AdCampaign.new(
-          patch_object("/ads/campaigns/#{campaign_id}", workspace_id, connection_id,
-                       'name' => name, 'status' => status)
-        )
-      end
-
-      # Needs `ads` and `publish`.
-      def delete_campaign(campaign_id, workspace_id:, connection_id:)
-        delete_object("/ads/campaigns/#{campaign_id}", workspace_id, connection_id)
-      end
-
-      # Copy the campaign on Meta and return the copy's id. Needs `ads` and `publish`.
-      def duplicate_campaign(campaign_id, workspace_id:, connection_id:, paused: nil)
-        duplicate_object("/ads/campaigns/#{campaign_id}", workspace_id, connection_id, paused)
-      end
-
-      # `budget` is `{ minor:, type:, endAt: }`; `targeting` uses the API's camelCase keys.
-      # Starts paused unless `paused: false`. Needs `ads` and `publish`.
-      def create_ad_set(workspace_id:, connection_id:, campaign_id:, page_id:, name:, goal:, budget:, targeting:,
-                        paused: nil)
-        body = {
-          'workspaceId' => workspace_id,
-          'connectionId' => connection_id,
-          'campaignId' => campaign_id,
-          'pageId' => page_id,
-          'name' => name,
-          'goal' => goal,
-          'budget' => stringify(budget),
-          'targeting' => stringify(targeting)
-        }
-        body['paused'] = paused unless paused.nil?
-        AdSet.new(unwrap(http.post('/ads/ad-sets', body)))
-      end
-
-      def get_ad_set(ad_set_id, connection_id:, workspace_id: nil)
-        AdSet.new(unwrap(http.get("/ads/ad-sets/#{ad_set_id}", meta_query(workspace_id, connection_id))))
-      end
-
-      # Needs `ads` and `publish`.
-      def update_ad_set(ad_set_id, workspace_id:, connection_id:, name: nil, status: nil, budget_minor: nil,
-                        end_at: nil, targeting: nil)
-        AdSet.new(
-          patch_object(
-            "/ads/ad-sets/#{ad_set_id}", workspace_id, connection_id,
-            'name' => name, 'status' => status, 'budgetMinor' => budget_minor, 'endAt' => iso8601(end_at),
-            'targeting' => targeting.nil? ? nil : stringify(targeting)
-          )
-        )
-      end
-
-      # Needs `ads` and `publish`.
-      def delete_ad_set(ad_set_id, workspace_id:, connection_id:)
-        delete_object("/ads/ad-sets/#{ad_set_id}", workspace_id, connection_id)
-      end
-
-      # Needs `ads` and `publish`.
-      def duplicate_ad_set(ad_set_id, workspace_id:, connection_id:, paused: nil)
-        duplicate_object("/ads/ad-sets/#{ad_set_id}", workspace_id, connection_id, paused)
-      end
-
-      # An ad inside an ad set, from an existing creative (unlike {#create}).
-      # Starts paused unless `paused: false`. Needs `ads` and `publish`.
-      def create_network_ad(workspace_id:, connection_id:, ad_set_id:, creative_id:, name:, paused: nil)
-        body = {
-          'workspaceId' => workspace_id,
-          'connectionId' => connection_id,
-          'adSetId' => ad_set_id,
-          'creativeId' => creative_id,
-          'name' => name
-        }
-        body['paused'] = paused unless paused.nil?
-        NetworkAd.new(unwrap(http.post('/ads/ads', body)))
-      end
-
-      def get_network_ad(ad_id, connection_id:, workspace_id: nil)
-        NetworkAd.new(unwrap(http.get("/ads/ads/#{ad_id}", meta_query(workspace_id, connection_id))))
-      end
-
-      # Needs `ads` and `publish`.
-      def update_network_ad(ad_id, workspace_id:, connection_id:, name: nil, status: nil, creative_id: nil)
-        NetworkAd.new(
-          patch_object("/ads/ads/#{ad_id}", workspace_id, connection_id,
-                       'name' => name, 'status' => status, 'creativeId' => creative_id)
-        )
-      end
-
-      # Needs `ads` and `publish`.
-      def delete_network_ad(ad_id, workspace_id:, connection_id:)
-        delete_object("/ads/ads/#{ad_id}", workspace_id, connection_id)
-      end
-
-      # Needs `ads` and `publish`.
-      def duplicate_network_ad(ad_id, workspace_id:, connection_id:, paused: nil)
-        duplicate_object("/ads/ads/#{ad_id}", workspace_id, connection_id, paused)
-      end
-
       # Pause or activate many objects at once. Each of `objects` is `{ id:, level: }`
       # with level campaign, ad_set or ad. Needs `ads` and `publish`.
       def bulk_set_status(workspace_id:, connection_id:, status:, objects:)
@@ -535,49 +408,6 @@ module Fopost
           'objects' => objects.to_a.map { |object| stringify(object) }
         }
         parse_list(BulkAdStatusResult, unwrap(http.post('/ads/status', body)))
-      end
-
-      def creatives(connection_id:, ad_account_id:, workspace_id: nil)
-        result = unwrap(
-          http.get('/ads/creatives', meta_query(workspace_id, connection_id).merge('ad_account_id' => ad_account_id))
-        )
-        parse_list(AdCreative, result.is_a?(Hash) ? result['creatives'] : nil)
-      end
-
-      # `format` is image, video or carousel; a carousel takes `cards`
-      # (`{ mediaUrl:, destinationUrl:, headline:, description: }`).
-      def create_creative(workspace_id:, connection_id:, ad_account_id:, page_id:, name:, format:, text:,
-                          headline: nil, destination_url: nil, call_to_action: nil, url_tags: nil, media_url: nil,
-                          thumbnail_media_url: nil, cards: nil)
-        body = {
-          'workspaceId' => workspace_id,
-          'connectionId' => connection_id,
-          'adAccountId' => ad_account_id,
-          'pageId' => page_id,
-          'name' => name,
-          'format' => format,
-          'text' => text
-        }
-        body.merge!(
-          compact_nil(
-            'headline' => headline,
-            'destinationUrl' => destination_url,
-            'callToAction' => call_to_action,
-            'urlTags' => url_tags,
-            'mediaUrl' => media_url,
-            'thumbnailMediaUrl' => thumbnail_media_url,
-            'cards' => cards&.map { |card| stringify(card) }
-          )
-        )
-        AdCreative.new(unwrap(http.post('/ads/creatives', body)))
-      end
-
-      def get_creative(creative_id, connection_id:, workspace_id: nil)
-        AdCreative.new(unwrap(http.get("/ads/creatives/#{creative_id}", meta_query(workspace_id, connection_id))))
-      end
-
-      def delete_creative(creative_id, workspace_id:, connection_id:)
-        delete_object("/ads/creatives/#{creative_id}", workspace_id, connection_id)
       end
 
       def get_audience(audience_id, connection_id:, workspace_id: nil)
@@ -778,123 +608,6 @@ module Fopost
         result.is_a?(Array) ? result.map(&:to_s) : []
       end
 
-      # ─── Product catalogs ───────────────────────────────────────
-
-      # Catalogs the connection's business portfolios reach. Read live, never stored.
-      def catalogs(connection_id:, workspace_id: nil)
-        ProductCatalogsResult.from(unwrap(http.get('/ads/catalogs', meta_query(workspace_id, connection_id))))
-      end
-
-      # Created on the connection's business portfolio. Also needs `publish`.
-      def create_catalog(workspace_id:, connection_id:, name:, vertical: nil)
-        body = compact_nil(
-          'workspaceId' => workspace_id, 'connectionId' => connection_id,
-          'name' => name, 'vertical' => vertical
-        )
-        ProductCatalog.from(unwrap(http.post('/ads/catalogs', body)))
-      end
-
-      def catalog(catalog_id, connection_id:, workspace_id: nil)
-        ProductCatalog.from(
-          unwrap(http.get("/ads/catalogs/#{catalog_id}", meta_query(workspace_id, connection_id)))
-        )
-      end
-
-      # Also needs `publish`.
-      def update_catalog(catalog_id, workspace_id:, connection_id:, name:)
-        ProductCatalog.from(patch_object(
-                              "/ads/catalogs/#{catalog_id}", workspace_id, connection_id,
-                              'workspaceId' => workspace_id, 'connectionId' => connection_id, 'name' => name
-                            ))
-      end
-
-      # Deletes every product, feed and set in it. Also needs `publish`.
-      def delete_catalog(catalog_id, workspace_id:, connection_id:)
-        delete_object("/ads/catalogs/#{catalog_id}", workspace_id, connection_id)
-      end
-
-      # One page of products; pass `next_cursor` back as `after`.
-      def catalog_products(catalog_id, connection_id:, workspace_id: nil, after: nil)
-        query = meta_query(workspace_id, connection_id).merge('after' => after)
-        CatalogProductsPage.from(unwrap(http.get("/ads/catalogs/#{catalog_id}/products", query)))
-      end
-
-      # Up to 500 upserts and deletes in one batch, keyed by your own `retailerId`.
-      # Also needs `publish`.
-      def write_catalog_products(catalog_id, workspace_id:, connection_id:, products:)
-        body = {
-          'workspaceId' => workspace_id, 'connectionId' => connection_id,
-          'products' => products.map { |p| stringify(p) }
-        }
-        CatalogBatchResult.from(unwrap(http.post("/ads/catalogs/#{catalog_id}/products", body)))
-      end
-
-      def product_feeds(catalog_id, connection_id:, workspace_id: nil)
-        parse_list(
-          ProductFeed,
-          unwrap(http.get("/ads/catalogs/#{catalog_id}/feeds", meta_query(workspace_id, connection_id)))
-        )
-      end
-
-      # `schedule` is "HOURLY", "DAILY" or "WEEKLY" and needs `url`. Also needs `publish`.
-      def create_product_feed(catalog_id, workspace_id:, connection_id:, name:, url: nil, schedule: nil)
-        body = compact_nil(
-          'workspaceId' => workspace_id, 'connectionId' => connection_id,
-          'name' => name, 'url' => url, 'schedule' => schedule
-        )
-        ProductFeed.from(unwrap(http.post("/ads/catalogs/#{catalog_id}/feeds", body)))
-      end
-
-      # Also needs `publish`.
-      def delete_product_feed(catalog_id, feed_id, workspace_id:, connection_id:)
-        delete_object("/ads/catalogs/#{catalog_id}/feeds/#{feed_id}", workspace_id, connection_id)
-      end
-
-      # Each run the network made of the feed.
-      def feed_uploads(catalog_id, feed_id, connection_id:, workspace_id: nil)
-        path = "/ads/catalogs/#{catalog_id}/feeds/#{feed_id}/uploads"
-        parse_list(ProductFeedUpload, unwrap(http.get(path, meta_query(workspace_id, connection_id))))
-      end
-
-      # Fetches the feed now; the id of the run. Also needs `publish`.
-      def start_feed_upload(catalog_id, feed_id, workspace_id:, connection_id:, url: nil)
-        body = compact_nil('workspaceId' => workspace_id, 'connectionId' => connection_id, 'url' => url)
-        result = unwrap(http.post("/ads/catalogs/#{catalog_id}/feeds/#{feed_id}/uploads", body))
-        id = result.is_a?(Hash) ? result['id'] : nil
-        id.nil? ? '' : id.to_s
-      end
-
-      # A catalog ad runs from a product set, not the whole catalog.
-      def product_sets(catalog_id, connection_id:, workspace_id: nil)
-        parse_list(ProductSet, unwrap(http.get(
-                                        "/ads/catalogs/#{catalog_id}/product-sets", meta_query(workspace_id,
-                                                                                               connection_id)
-                                      )))
-      end
-
-      # Without a `filter` the set is the whole catalog. Also needs `publish`.
-      def create_product_set(catalog_id, workspace_id:, connection_id:, name:, filter: nil)
-        body = compact_nil(
-          'workspaceId' => workspace_id, 'connectionId' => connection_id,
-          'name' => name, 'filter' => filter.nil? ? nil : stringify(filter)
-        )
-        ProductSet.from(unwrap(http.post("/ads/catalogs/#{catalog_id}/product-sets", body)))
-      end
-
-      # Also needs `publish`.
-      def update_product_set(catalog_id, set_id, workspace_id:, connection_id:, name:, filter: nil)
-        ProductSet.from(patch_object(
-                          "/ads/catalogs/#{catalog_id}/product-sets/#{set_id}", workspace_id, connection_id,
-                          'workspaceId' => workspace_id, 'connectionId' => connection_id,
-                          'name' => name, 'filter' => filter.nil? ? nil : stringify(filter)
-                        ))
-      end
-
-      # Also needs `publish`.
-      def delete_product_set(catalog_id, set_id, workspace_id:, connection_id:)
-        delete_object("/ads/catalogs/#{catalog_id}/product-sets/#{set_id}", workspace_id, connection_id)
-      end
-
       # ─── Reach and frequency ────────────────────────────────────
 
       def reach_frequency(connection_id:, ad_account_id:, workspace_id: nil)
@@ -927,24 +640,6 @@ module Fopost
       # Also needs `publish`.
       def cancel_reach_frequency(prediction_id, workspace_id:, connection_id:, ad_account_id:)
         reach_frequency_action(prediction_id, 'cancel', workspace_id, connection_id, ad_account_id)
-      end
-
-      # ─── Ad Library ─────────────────────────────────────────────
-
-      # The public ad archive: ads anyone is running, by keyword or by Page. Read
-      # live on every call and stored nowhere, so an ad that stops running is
-      # simply absent from the next search.
-      def library(connection_id:, countries:, workspace_id: nil, q: nil, page_ids: nil,
-                  active_status: nil, limit: nil, after: nil)
-        query = meta_query(workspace_id, connection_id).merge(
-          'countries' => Array(countries).join(','),
-          'q' => q,
-          'page_ids' => page_ids.nil? ? nil : Array(page_ids).join(','),
-          'active_status' => active_status,
-          'limit' => limit&.to_s,
-          'after' => after
-        )
-        AdLibraryPage.from(unwrap(http.get('/ads/library', query)))
       end
 
       # ─── Partnership ads ────────────────────────────────────────
@@ -1183,16 +878,6 @@ module Fopost
       def delete_object(path, workspace_id, connection_id)
         http.request(:delete, path, params: meta_query(workspace_id, connection_id))
         nil
-      end
-
-      # Answers the copy's Meta id.
-      def duplicate_object(path, workspace_id, connection_id, paused)
-        json = paused.nil? ? {} : { 'paused' => paused }
-        result = unwrap(
-          http.request(:post, "#{path}/duplicate", json: json, params: meta_query(workspace_id, connection_id))
-        )
-        id = result.is_a?(Hash) ? result['id'] : nil
-        id.nil? ? '' : id.to_s
       end
 
       def stringify(hash)

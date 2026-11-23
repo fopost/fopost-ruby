@@ -1391,138 +1391,11 @@ module Fopost
     attribute :next_cursor
   end
 
-  # A Meta ad inside an ad set. Read live from Meta, never stored.
-  class NetworkAd < Model
-    attribute :id
-    attribute :name
-    attribute :campaign_id
-    attribute :ad_set_id
-    attribute :creative_id
-    attribute :status
-    attribute :effective_status
-    attribute :created_at, :time
-  end
-
-  class AdSet < Model
-    attribute :id
-    attribute :name
-    attribute :campaign_id
-    attribute :status
-    attribute :effective_status
-    attribute :budget_minor
-    attribute :budget_type
-    attribute :end_at, :time
-    attribute :optimization_goal
-    attribute :created_at, :time
-    attribute :ads, [NetworkAd]
-  end
-
-  class AdCampaign < Model
-    attribute :id
-    attribute :name
-    attribute :status
-    attribute :effective_status
-    attribute :objective
-    attribute :budget_minor
-    attribute :budget_type
-    attribute :created_at, :time
-    attribute :ad_sets, [AdSet]
-  end
-
-  # Campaigns with their ad sets and ads, read live from Meta.
-  class AdAccountTree < Model
-    attribute :ad_account_id
-    attribute :currency
-    attribute :workspace_id
-    attribute :campaigns, [AdCampaign]
-  end
-
   class BulkAdStatusResult < Model
     attribute :id
     attribute :level
     attribute :ok
     attribute :error
-  end
-
-  class AdCreative < Model
-    attribute :id
-    attribute :name
-    attribute :format
-    attribute :status
-    attribute :title
-    attribute :body
-    attribute :link
-    attribute :thumbnail_url
-    attribute :call_to_action
-    attribute :url_tags
-  end
-
-  # ─── Product catalogs ──────────────────────────────────────────
-
-  # A product catalog on the connection's business portfolio, read live.
-  class ProductCatalog < Model
-    attribute :id
-    attribute :name
-    attribute :vertical
-    attribute :product_count
-  end
-
-  class ProductCatalogsResult < Model
-    attribute :catalogs, [ProductCatalog]
-    attribute :workspace_id
-  end
-
-  # One product in a catalog. `price_minor` is minor units of `currency`.
-  class CatalogProduct < Model
-    attribute :id
-    # Your own key for the product.
-    attribute :retailer_id
-    attribute :name
-    attribute :description
-    attribute :availability
-    attribute :condition
-    attribute :price_minor
-    attribute :currency
-    attribute :image_url
-    attribute :url
-  end
-
-  class CatalogProductsPage < Model
-    attribute :products, [CatalogProduct]
-    attribute :next_cursor
-  end
-
-  class CatalogBatchResult < Model
-    attribute :handles
-    # Products sent in this batch.
-    attribute :accepted
-  end
-
-  # Keeps a catalog in step with a product file you host.
-  class ProductFeed < Model
-    attribute :id
-    attribute :name
-    attribute :url
-    attribute :schedule
-    attribute :created_at, :time
-  end
-
-  class ProductFeedUpload < Model
-    attribute :id
-    attribute :started_at, :time
-    attribute :ended_at, :time
-    attribute :status
-    attribute :error_count
-    attribute :warning_count
-  end
-
-  # The slice of a catalog one catalog ad runs from.
-  class ProductSet < Model
-    attribute :id
-    attribute :name
-    attribute :product_count
-    # The network's own product-set filter.
-    attribute :filter
   end
 
   # ─── Reach and frequency ───────────────────────────────────────
@@ -1546,33 +1419,6 @@ module Fopost
   class ReachFrequencyResult < Model
     attribute :predictions, [ReachFrequencyPrediction]
     attribute :workspace_id
-  end
-
-  # ─── Ad Library ────────────────────────────────────────────────
-
-  # One public archive entry. Read live on every search and stored nowhere.
-  class AdLibraryEntry < Model
-    attribute :id
-    attribute :page_id
-    attribute :page_name
-    attribute :bodies
-    attribute :titles
-    attribute :link_urls
-    attribute :snapshot_url
-    attribute :publisher_platforms
-    attribute :started_at, :time
-    attribute :ended_at, :time
-    # Only on the archive's disclosure entries.
-    attribute :currency
-    attribute :spend_lower
-    attribute :spend_upper
-    attribute :impressions_lower
-    attribute :impressions_upper
-  end
-
-  class AdLibraryPage < Model
-    attribute :entries, [AdLibraryEntry]
-    attribute :next_cursor
   end
 
   # ─── Partnership ads ───────────────────────────────────────────
@@ -2084,33 +1930,6 @@ module Fopost
 
   # ─── Google Ads ───────────────────────────────────────────────────
 
-  # A keyword on an ad group. `id` is `<customer_id>~keyword~<ad_group_id>~<criterion_id>`.
-  class GoogleKeyword < Model
-    attribute :id
-    attribute :ad_group_id
-    attribute :text
-    attribute :match_type
-    attribute :status
-    # Account currency, minor units.
-    attribute :cpc_bid_minor
-    attribute :negative
-  end
-
-  class GoogleKeywordIdea < Model
-    attribute :text
-    attribute :avg_monthly_searches
-    attribute :competition
-    attribute :low_top_of_page_bid_minor
-    attribute :high_top_of_page_bid_minor
-  end
-
-  class GoogleSearchTerm < Model
-    attribute :term
-    attribute :ad_group_id
-    attribute :status
-    attribute :metrics
-  end
-
   class GoogleBidStrategy < Model
     attribute :id
     attribute :name
@@ -2125,42 +1944,6 @@ module Fopost
     attribute :start_hour
     attribute :end_hour
     attribute :bid_modifier
-  end
-
-  # A negative keyword list.
-  class GoogleSharedSet < Model
-    attribute :id
-    attribute :name
-    attribute :type
-    attribute :member_count
-  end
-
-  # A sitelink, callout or structured snippet.
-  class GoogleAsset < Model
-    attribute :id
-    attribute :name
-    attribute :type
-    attribute :text
-    attribute :final_url
-  end
-
-  # Where an asset is attached; an asset with no links serves nowhere.
-  class GoogleAssetLink < Model
-    attribute :id
-    attribute :asset_id
-    attribute :level
-    attribute :owner_id
-    attribute :field_type
-    attribute :status
-  end
-
-  # A Performance Max asset group.
-  class GoogleAssetGroup < Model
-    attribute :id
-    attribute :campaign_id
-    attribute :name
-    attribute :status
-    attribute :final_urls
   end
 
   # A lead from Local Services Ads, read live and never stored.
@@ -2184,41 +1967,6 @@ module Fopost
     attribute :type
     attribute :counting_type
     attribute :value_minor
-  end
-
-  # What Google projects applying a recommendation would change.
-  class GoogleRecommendationImpact < Model
-    attribute :base_clicks
-    attribute :potential_clicks
-    attribute :base_cost_minor
-    attribute :potential_cost_minor
-    attribute :base_conversions
-    attribute :potential_conversions
-  end
-
-  # One of Google's own recommendations. The id is the Google resource name
-  # rather than the `~` form other objects use, because a recommendation is not
-  # an object you address again: it is what apply and dismiss take.
-  class GoogleRecommendation < Model
-    attribute :id
-    attribute :type
-    attribute :campaign_id
-    attribute :ad_group_id
-    attribute :dismissed
-    attribute :impact, GoogleRecommendationImpact
-  end
-
-  class GoogleOptimizationScoreCampaign < Model
-    attribute :id
-    attribute :name
-    attribute :score
-  end
-
-  # Google's estimate of how well the account is set up, from 0 to 1.
-  class GoogleOptimizationScore < Model
-    attribute :score
-    attribute :weight
-    attribute :campaigns, [GoogleOptimizationScoreCampaign]
   end
 
   # ─── Blog ─────────────────────────────────────────────────────────

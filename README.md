@@ -600,7 +600,7 @@ end
 
 ## Ads
 
-Ads, campaigns, creatives, audiences, insights and lead forms on a connected network. `providers` lists the networks a deployment knows and what each supports. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete`, `bulk_set_status` and the create, update, delete and duplicate calls for campaigns, ad sets and network ads spend money and also need `publish`. A boost, campaign, ad set or ad starts paused unless you pass `paused: false`.
+Boosts, standalone ads, audiences, insights and lead forms on a connected network. `providers` lists the networks a deployment knows and what each supports. Every call needs the `ads` scope; `boost`, `create`, `set_status`, `delete` and `bulk_set_status` spend money and also need `publish`. A boost or ad starts paused unless you pass `paused: false`.
 
 ```ruby
 url = client.ads.authorize('meta', workspace_id: workspace.id)   # finish the login in a browser
@@ -629,26 +629,14 @@ client.ads.lead_forms(workspace_id: workspace.id)
 client.ads.leads('form_1', connection_id: source.connection_id, page_id: '42')
 ```
 
-The campaign tree is read live from Meta by Meta id, so each call names the connection:
+Calls on network objects name the connection:
 
 ```ruby
 conn = source.connection_id
-tree = client.ads.account_tree('act_123', connection_id: conn, workspace_id: workspace.id)
-campaign = client.ads.create_campaign(workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123',
-                                      name: 'Spring', goal: 'traffic')
-ad_set = client.ads.create_ad_set(workspace_id: workspace.id, connection_id: conn, campaign_id: campaign.id,
-                                  page_id: '42', name: 'US adults', goal: 'traffic',
-                                  budget: { minor: 5000, type: 'daily' },
-                                  targeting: { countries: ['US'], ageMin: 18, ageMax: 65, gender: 'all' })
-creative = client.ads.create_creative(workspace_id: workspace.id, connection_id: conn, ad_account_id: 'act_123',
-                                      page_id: '42', name: 'Hero', format: 'image', text: 'New in store',
-                                      media_url: 'https://yourbrand.com/hero.jpg', url_tags: 'utm_source=meta')
-client.ads.create_network_ad(workspace_id: workspace.id, connection_id: conn, ad_set_id: ad_set.id,
-                             creative_id: creative.id, name: 'Hero ad')
 client.ads.bulk_set_status(workspace_id: workspace.id, connection_id: conn, status: 'active',
-                           objects: [{ id: campaign.id, level: 'campaign' }])
+                           objects: [{ id: '120210000000001', level: 'campaign' }])
 
-client.ads.insights(connection_id: conn, object_id: campaign.id, since: '2026-09-01', until: '2026-09-07',
+client.ads.insights(connection_id: conn, object_id: '120210000000001', since: '2026-09-01', until: '2026-09-07',
                     breakdown: 'age', daily: true)
 client.ads.ad_insights(ad.id, workspace_id: workspace.id, since: '2026-09-01', until: '2026-09-07')
 
@@ -676,23 +664,17 @@ client.ads.create_custom_conversion(
 
 | Group | Methods |
 | --- | --- |
-| Campaigns | `account_tree`, `create_campaign`, `get_campaign`, `update_campaign`, `delete_campaign`, `duplicate_campaign` |
-| Ad sets | `create_ad_set`, `get_ad_set`, `update_ad_set`, `delete_ad_set`, `duplicate_ad_set` |
-| Network ads | `create_network_ad`, `get_network_ad`, `update_network_ad`, `delete_network_ad`, `duplicate_network_ad`, `bulk_set_status` |
-| Creatives | `creatives`, `create_creative`, `get_creative`, `delete_creative` |
+| Status | `bulk_set_status` |
 | Networks | `providers`, `authorize` |
 | Audiences | `get_audience`, `update_audience`, `delete_audience`, `add_audience_users`, `add_audience_companies`, `estimate_reach` |
 | Forecasts | `bid_pricing`, `supply_forecast` |
 | Conversions | `upload_conversions`, `send_conversions`, `conversion_batches`, `conversion_rules`, `create_conversion_rule`, `get_conversion_rule`, `update_conversion_rule`, `delete_conversion_rule`, `attach_conversion_rule`, `detach_conversion_rule`, `conversion_metrics`, `send_conversion_events` |
 | Pixels | `pixels`, `create_pixel`, `get_pixel`, `update_pixel`, `share_pixel`, `pixel_stats`, `pixel_match_quality` |
 | Custom conversions | `custom_conversions`, `create_custom_conversion`, `get_custom_conversion`, `update_custom_conversion`, `delete_custom_conversion` |
-| Ad library | `ad_library` |
 | Insights | `insights`, `ad_insights` |
 | Leads | `get_lead_form`, `archive_lead_form`, `leads_feed`, `lead_pages`, `subscribe_lead_page`, `unsubscribe_lead_page` |
 | Goals | `goals` |
-| Catalogs | `catalogs`, `create_catalog`, `catalog`, `update_catalog`, `delete_catalog`, `catalog_products`, `write_catalog_products`, `product_feeds`, `create_product_feed`, `delete_product_feed`, `feed_uploads`, `start_feed_upload`, `product_sets`, `create_product_set`, `update_product_set`, `delete_product_set` |
 | Reach and frequency | `reach_frequency`, `create_reach_frequency`, `reach_frequency_prediction`, `reserve_reach_frequency`, `cancel_reach_frequency` |
-| Ad Library | `library` |
 | Partnership ads | `partnership_creators`, `request_partnership`, `revoke_partnership` |
 | Account settings | `account_activity`, `labels`, `create_label`, `update_label`, `delete_label`, `apply_label`, `studies`, `create_study`, `study`, `delete_study`, `ios_campaign_limits`, `high_demand_periods`, `create_high_demand_period`, `delete_high_demand_period`, `value_rule_sets`, `create_value_rule_set`, `delete_value_rule_set` |
 
@@ -1087,27 +1069,24 @@ MIT. See [LICENSE](LICENSE).
 
 ### Google Ads
 
-Campaigns, ad groups, ads, audiences and insights are on `client.ads` and dispatch by
-connection. What only Google has is under `client.ads.google`:
+Audiences and insights are on `client.ads` and dispatch by connection. What only Google
+has is under `client.ads.google`:
 
 ```ruby
-keywords = client.ads.google.keywords(
+client.ads.google.bid_strategies(
   connection_id: 'c4d5e6f7-…',
   customer_id: '1234567890'
 )
 
-client.ads.google.create_keyword(
+client.ads.google.set_ad_schedule(
   workspace_id: '7d2b8c11-…',
   connection_id: 'c4d5e6f7-…',
   customer_id: '1234567890',
-  ad_group_id: '1234567890~adGroup~77',
-  text: 'running shoes',
-  match_type: 'EXACT'
+  campaign_id: '1234567890~campaign~55',
+  slots: [{ 'dayOfWeek' => 'MONDAY', 'startHour' => 9, 'endHour' => 18 }]
 )
 ```
 
-Also `keyword_ideas`, `keyword_metrics`, `search_terms`, `bid_strategies`, `ad_schedule`
-and `set_ad_schedule`, the negative keyword lists, `assets` and `asset_groups`,
-`local_services_leads`, the conversion methods, and `query` for a raw read-only GAQL
-SELECT. Changes need the `publish` scope as well as `ads`; `customer_id` has to name an
-account the connection's grant reaches.
+Also `create_bid_strategy`, `ad_schedule`, `local_services_leads`, the conversion methods,
+and `query` for a raw read-only GAQL SELECT. Changes need the `publish` scope as well as
+`ads`; `customer_id` has to name an account the connection's grant reaches.

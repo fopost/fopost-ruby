@@ -82,10 +82,10 @@ Coverage is uneven and that is deliberate — `labels` is `#list` only, `workspa
 list, thread, conversation, read, refresh, resolve, reply, hide, delete, like, pin, react, edit,
 start-conversation, typing and approval endpoints (like, pin, react, edit, start-conversation
 and typing also need `publish`) but not
-`/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers ads, connections,
-the campaign tree (campaigns, ad sets, network ads), creatives, audiences, reach, insights,
-targeting search, lead forms, the leads feed, pixels, the Conversions API and custom conversions; `boost`, `create`, `set_status`, `delete`,
-`bulk_set_status` and the campaign/ad set/network ad writes also need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and
+`/inbox/chat/*` or the attachment stream. `ads` (scope `ads`) covers boosts, standalone ads,
+connections, bulk status, audiences, reach, insights, targeting search, lead forms, the leads feed,
+pixels, the Conversions API and custom conversions; `boost`, `create`, `set_status`, `delete` and
+`bulk_set_status` also need `publish`. `validate` (scope `posts`) covers `/validate/post`, `/validate/length` and
 `/validate/media`. `media` (scope `posts`) is `limits` plus direct upload: `presign`, `complete` and
 `upload_direct`, which PUTs the bytes through `HTTP::Client#put_raw` with no API key.
 `posts.create`/`update` take `files:` and pick multipart (`HTTP::Client#post_multipart`, body

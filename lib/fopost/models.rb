@@ -1930,33 +1930,6 @@ module Fopost
 
   # ─── Google Ads ───────────────────────────────────────────────────
 
-  # A keyword on an ad group. `id` is `<customer_id>~keyword~<ad_group_id>~<criterion_id>`.
-  class GoogleKeyword < Model
-    attribute :id
-    attribute :ad_group_id
-    attribute :text
-    attribute :match_type
-    attribute :status
-    # Account currency, minor units.
-    attribute :cpc_bid_minor
-    attribute :negative
-  end
-
-  class GoogleKeywordIdea < Model
-    attribute :text
-    attribute :avg_monthly_searches
-    attribute :competition
-    attribute :low_top_of_page_bid_minor
-    attribute :high_top_of_page_bid_minor
-  end
-
-  class GoogleSearchTerm < Model
-    attribute :term
-    attribute :ad_group_id
-    attribute :status
-    attribute :metrics
-  end
-
   class GoogleBidStrategy < Model
     attribute :id
     attribute :name
@@ -1971,42 +1944,6 @@ module Fopost
     attribute :start_hour
     attribute :end_hour
     attribute :bid_modifier
-  end
-
-  # A negative keyword list.
-  class GoogleSharedSet < Model
-    attribute :id
-    attribute :name
-    attribute :type
-    attribute :member_count
-  end
-
-  # A sitelink, callout or structured snippet.
-  class GoogleAsset < Model
-    attribute :id
-    attribute :name
-    attribute :type
-    attribute :text
-    attribute :final_url
-  end
-
-  # Where an asset is attached; an asset with no links serves nowhere.
-  class GoogleAssetLink < Model
-    attribute :id
-    attribute :asset_id
-    attribute :level
-    attribute :owner_id
-    attribute :field_type
-    attribute :status
-  end
-
-  # A Performance Max asset group.
-  class GoogleAssetGroup < Model
-    attribute :id
-    attribute :campaign_id
-    attribute :name
-    attribute :status
-    attribute :final_urls
   end
 
   # A lead from Local Services Ads, read live and never stored.
@@ -2030,41 +1967,6 @@ module Fopost
     attribute :type
     attribute :counting_type
     attribute :value_minor
-  end
-
-  # What Google projects applying a recommendation would change.
-  class GoogleRecommendationImpact < Model
-    attribute :base_clicks
-    attribute :potential_clicks
-    attribute :base_cost_minor
-    attribute :potential_cost_minor
-    attribute :base_conversions
-    attribute :potential_conversions
-  end
-
-  # One of Google's own recommendations. The id is the Google resource name
-  # rather than the `~` form other objects use, because a recommendation is not
-  # an object you address again: it is what apply and dismiss take.
-  class GoogleRecommendation < Model
-    attribute :id
-    attribute :type
-    attribute :campaign_id
-    attribute :ad_group_id
-    attribute :dismissed
-    attribute :impact, GoogleRecommendationImpact
-  end
-
-  class GoogleOptimizationScoreCampaign < Model
-    attribute :id
-    attribute :name
-    attribute :score
-  end
-
-  # Google's estimate of how well the account is set up, from 0 to 1.
-  class GoogleOptimizationScore < Model
-    attribute :score
-    attribute :weight
-    attribute :campaigns, [GoogleOptimizationScoreCampaign]
   end
 
   # ─── Blog ─────────────────────────────────────────────────────────

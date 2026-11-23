@@ -70,6 +70,27 @@ All notable changes to this gem are documented here. The format follows
   `BLOG_ARTICLE_STATUSES`, `BLOG_KEYWORD_STATUSES` and `BLOG_TARGET_KINDS` constants. Articles
   are ordinary posts now; `client.blogs` (remote articles on a connected site) is unchanged.
 
+- The ads methods for endpoints the API no longer serves: `account_tree`; `create_campaign`,
+  `get_campaign`, `update_campaign`, `delete_campaign`, `duplicate_campaign`; `create_ad_set`,
+  `get_ad_set`, `update_ad_set`, `delete_ad_set`, `duplicate_ad_set`; `create_network_ad`,
+  `get_network_ad`, `update_network_ad`, `delete_network_ad`, `duplicate_network_ad`;
+  `creatives`, `create_creative`, `get_creative`, `delete_creative`; the catalog, product,
+  feed and product-set methods; `library`. With them the `AdAccountTree`, `AdCampaign`,
+  `AdSet`, `NetworkAd`, `AdCreative`, `ProductCatalog`, `ProductCatalogsResult`,
+  `CatalogProduct`, `CatalogProductsPage`, `CatalogBatchResult`, `ProductFeed`,
+  `ProductFeedUpload`, `ProductSet`, `AdLibraryEntry` and `AdLibraryPage` models. Boosts,
+  standalone ads, `bulk_set_status`, audiences, lead forms, insights, pixels and conversions
+  are unchanged.
+- From `client.ads.google`: `keywords`, `create_keyword`, `update_keyword`, `delete_keyword`,
+  `keyword_ideas`, `keyword_metrics`, `search_terms`, the negative keyword list methods,
+  `assets`, `create_asset`, `attach_asset`, `delete_asset`, the asset group methods,
+  `recommendations`, `optimization_score`, `apply_recommendations` and
+  `dismiss_recommendations`, with their `GoogleKeyword`, `GoogleKeywordIdea`,
+  `GoogleSearchTerm`, `GoogleSharedSet`, `GoogleAsset`, `GoogleAssetLink`, `GoogleAssetGroup`,
+  `GoogleRecommendation`, `GoogleRecommendationImpact`, `GoogleOptimizationScore` and
+  `GoogleOptimizationScoreCampaign` models. Bid strategies, the ad schedule, Local Services
+  leads, conversions and `query` remain.
+
 ## [0.4.0] - 2026-10-18
 
 ### Added

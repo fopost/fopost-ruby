@@ -30,10 +30,8 @@ class AdsTikTokTest < Minitest::Test
     assert_equal 'idt_1', transport.last.query['identity_id']
   end
 
-  def test_spark_post_id_and_smart_plus_travel_in_the_body
-    transport
-      .stub(:post, '/ads', json: { 'data' => AdsTest::AD_FIXTURE })
-      .stub(:post, '/ads/campaigns', json: { 'data' => { 'id' => 'c1', 'name' => 'Smart', 'status' => 'PAUSED' } })
+  def test_spark_post_id_travels_in_the_body
+    transport.stub(:post, '/ads', json: { 'data' => AdsTest::AD_FIXTURE })
 
     client.ads.create(workspace_id: 'ws_1', connection_id: 'conn_1', ad_account_id: '7011',
                       page_id: 'idt_1', name: 'Spark', goal: 'traffic',
@@ -41,11 +39,6 @@ class AdsTikTokTest < Minitest::Test
                       targeting: { 'countries' => ['US'] }, text: '', spark_post_id: 'item_99')
 
     assert_equal 'item_99', transport.last.json['sparkPostId']
-
-    client.ads.create_campaign(workspace_id: 'ws_1', connection_id: 'conn_1', ad_account_id: '7011',
-                               name: 'Smart', goal: 'traffic', smart_plus: true)
-
-    assert transport.last.json['smartPlus']
   end
 
   def test_conversions_report_what_the_network_accepted

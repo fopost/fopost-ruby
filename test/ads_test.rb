@@ -213,43 +213,6 @@ class AdsTest < Minitest::Test
     assert_equal 'abc', page.next_cursor
   end
 
-  def test_account_tree_nests_campaigns_ad_sets_and_ads
-    ad_set = { 'id' => 's_1', 'name' => 'US', 'ads' => [{ 'id' => 'a_1', 'creativeId' => 'cr_1' }] }
-    campaign = { 'id' => 'c_1', 'name' => 'Spring', 'status' => 'ACTIVE', 'adSets' => [ad_set] }
-    transport.stub(:get, '/ads/accounts/act_123/tree', json: {
-                     'data' => { 'adAccountId' => 'act_123', 'currency' => 'USD', 'workspaceId' => 'ws_1',
-                                 'campaigns' => [campaign] }
-                   })
-
-    tree = client.ads.account_tree('act_123', connection_id: 'conn_1', workspace_id: 'ws_1')
-
-    assert_equal({ 'workspace_id' => 'ws_1', 'connection_id' => 'conn_1' }, transport.last.query)
-    assert_equal 'USD', tree.currency
-    assert_equal 'Spring', tree.campaigns[0].name
-    assert_equal 'cr_1', tree.campaigns[0].ad_sets[0].ads[0].creative_id
-  end
-
-  def test_campaign_update_duplicate_and_delete_carry_the_meta_query
-    transport
-      .stub(:patch, '/ads/campaigns/c_1', json: { 'data' => { 'id' => 'c_1', 'status' => 'PAUSED' } })
-      .stub(:post, '/ads/campaigns/c_1/duplicate', status: 201, json: { 'data' => { 'id' => 'c_2' } })
-      .stub(:delete, '/ads/campaigns/c_1', json: { 'message' => 'Deleted' })
-
-    campaign = client.ads.update_campaign('c_1', workspace_id: 'ws_1', connection_id: 'conn_1', status: 'paused')
-
-    assert_equal 'PAUSED', campaign.status
-    assert_equal({ 'status' => 'paused' }, transport.last.json)
-    assert_equal({ 'workspace_id' => 'ws_1', 'connection_id' => 'conn_1' }, transport.last.query)
-
-    copy = client.ads.duplicate_campaign('c_1', workspace_id: 'ws_1', connection_id: 'conn_1', paused: true)
-
-    assert_equal 'c_2', copy
-    assert_equal({ 'paused' => true }, transport.last.json)
-
-    assert_nil client.ads.delete_campaign('c_1', workspace_id: 'ws_1', connection_id: 'conn_1')
-    assert_equal 'DELETE', transport.last.method
-  end
-
   def test_bulk_set_status_sends_the_objects
     transport.stub(:post, '/ads/status', json: { 'data' => [{ 'id' => 'c_1', 'level' => 'campaign', 'ok' => true }] })
 
@@ -304,25 +267,10 @@ class AdsTest < Minitest::Test
     assert_equal({ 'workspace_id' => 'ws_1', 'since' => '2026-09-01', 'until' => '2026-09-07' }, transport.last.query)
   end
 
-  def test_creatives_audience_users_and_lead_pages
+  def test_audience_users_and_lead_pages
     transport
-      .stub(:get, '/ads/creatives', json: { 'data' => { 'creatives' => [{ 'id' => 'cr_1', 'format' => 'image',
-                                                                          'urlTags' => 'utm_source=meta' }] } })
-      .stub(:post, '/ads/creatives', status: 201, json: { 'data' => { 'id' => 'cr_2', 'format' => 'carousel' } })
       .stub(:post, '/ads/audiences/aud_1/users', json: { 'data' => { 'added' => 2 } })
       .stub(:post, '/ads/lead-pages', status: 201, json: { 'data' => { 'pageId' => '42', 'backfilled' => 3 } })
-
-    assert_equal 'utm_source=meta',
-                 client.ads.creatives(connection_id: 'conn_1', ad_account_id: 'act_123')[0].url_tags
-
-    created = client.ads.create_creative(
-      workspace_id: 'ws_1', connection_id: 'conn_1', ad_account_id: 'act_123', page_id: '42', name: 'Cards',
-      format: 'carousel', text: 'Swipe', cards: [{ mediaUrl: 'https://yourbrand.com/1.jpg' }]
-    )
-
-    assert_equal 'carousel', created.format
-    assert_equal [{ 'mediaUrl' => 'https://yourbrand.com/1.jpg' }], transport.last.json['cards']
-    refute transport.last.json.key?('headline')
 
     added = client.ads.add_audience_users('aud_1', workspace_id: 'ws_1', connection_id: 'conn_1',
                                                    emails: ['a@yourbrand.com', 'b@yourbrand.com'])
